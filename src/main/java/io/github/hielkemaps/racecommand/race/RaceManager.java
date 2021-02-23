@@ -38,7 +38,7 @@ public class RaceManager {
 
         for(UUID owner: publicRaces){
             //If player is not owner or player in public race
-            if(!owner.equals(uuid) && !races.get(owner).getPlayers().contains(uuid)) {
+            if(!owner.equals(uuid) && !races.get(owner).hasPlayer(uuid)) {
                 return true;
             }
         }

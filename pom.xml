@@ -6,7 +6,7 @@
 
     <groupId>io.github.hielkemaps</groupId>
     <artifactId>RaceCommand</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -93,7 +93,7 @@
                         </goals>
 
                         <configuration>
-                            <outputDirectory>D:\Servers\network\parkour-spiral\plugins
+                            <outputDirectory>D:\Servers\network\parkour-paradise\plugins
                             </outputDirectory>
                             <resources>
                                 <resource>

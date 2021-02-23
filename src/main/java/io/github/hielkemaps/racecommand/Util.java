@@ -4,6 +4,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
+import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 public class Util {
@@ -33,5 +35,13 @@ public class Util {
                 return i + suffixes[i % 10];
 
         }
+    }
+
+    public static <T> T getRandomItem(List<T> list)
+    {
+        Random random = new Random();
+        int listSize = list.size();
+        int randomIndex = random.nextInt(listSize);
+        return list.get(randomIndex);
     }
 }

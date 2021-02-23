@@ -7,6 +7,12 @@ import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -15,30 +21,36 @@ import org.bukkit.scoreboard.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Race {
+public abstract class Race {
 
     private final String name;
-    private final UUID owner;
-    private final List<UUID> players = new ArrayList<>();
-    private List<UUID> finishedPlayers = new ArrayList<>();
-    private boolean isPublic = false;
-    private int countDown = 5;
+    protected final UUID owner;
+    protected final List<RacePlayer> players = new ArrayList<>();
     private boolean isStarting = false;
     private boolean hasStarted = false;
     private final Set<UUID> InvitedPlayers = new HashSet<>();
-    private boolean pvp = false;
+    private int place = 1;
+
+    //options
+    private boolean isPublic = false;
+    private int countDown = 5;
     private boolean broadcast = false;
     private boolean ghostPlayers = false;
-    private int place = 1;
-    private List<RaceResult> results = new ArrayList<>();
+
+    //tasks
     private BukkitTask countDownTask;
     private BukkitTask countDownStopTask;
     private BukkitTask playingTask;
 
+
     public Race(UUID owner, String name) {
+
         this.owner = owner;
-        players.add(owner);
         this.name = name;
+
+        RacePlayer racePlayer = new RacePlayer(this, owner);
+        players.add(racePlayer);
+        onRacePlayerJoin(racePlayer);
 
         PlayerWrapper pw = PlayerManager.getPlayer(owner);
         pw.setInRace(true);
@@ -46,24 +58,35 @@ public class Race {
 
     public void start() {
         place = 1;
-        finishedPlayers = new ArrayList<>();
-        results = new ArrayList<>();
         isStarting = true;
-
-        AtomicInteger seconds = new AtomicInteger(countDown);
 
         sendMessage(Main.PREFIX + "Starting race...");
 
         //Tp players to start
-        for (UUID uuid : players) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) player.performCommand("restart");
+        for (RacePlayer racePlayer : players) {
+            Player player = racePlayer.getPlayer();
+            if (player != null) {
+                player.performCommand("restart");
+                onPlayerStart(racePlayer);
+            }
         }
 
-        //Countdown
-        countDownTask = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), () -> {
-            for (UUID uuid : players) {
-                Player player = Bukkit.getPlayer(uuid);
+        //Countdown task
+        countDownTask = getCountDownTask();
+
+        //Stop countdown task
+        countDownStopTask = getStopTask();
+
+        playingTask = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), this::tick, countDown * 20L, 1);
+        updateRequirements();
+    }
+
+    private BukkitTask getCountDownTask() {
+        AtomicInteger seconds = new AtomicInteger(countDown);
+
+        return Bukkit.getScheduler().runTaskTimer(Main.getInstance(), () -> {
+            for (RacePlayer racePlayer : players) {
+                Player player = racePlayer.getPlayer();
                 if (player == null) continue;
 
                 //Always invisible during countdown
@@ -88,17 +111,19 @@ public class Race {
             }
             seconds.getAndDecrement();
         }, 0, 20);
+    }
 
-        //Stop countdown
-        countDownStopTask = Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
+    private BukkitTask getStopTask() {
+        return Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
             countDownTask.cancel();
 
-            for (UUID uuid : players) {
-                Player player = Bukkit.getPlayer(uuid);
-                if (player == null) continue;
+            for (RacePlayer racePlayer : players) {
+                Player player = racePlayer.getPlayer();
+                if (player == null) {
+                    removePlayer(player.getUniqueId());
+                    continue;
+                }
 
-                player.sendTitle(" ", ChatColor.BOLD + "GO", 2, 18, 2);
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 2);
                 player.addScoreboardTag("inRace");
                 executeStartFunction(player);
 
@@ -106,44 +131,57 @@ public class Race {
                 hasStarted = true;
             }
 
+            onCountdownFinish();
+
             sendMessage(Main.PREFIX + "Race has started");
-        }, 20 * countDown);
-
-        playingTask = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), () -> {
-
-            //stop race if everyone has finished
-            if (finishedPlayers.containsAll(players)) {
-                stop();
-                sendMessage(Main.PREFIX + "Race has ended");
-            }
-
-            for (UUID uuid : players) {
-                if (finishedPlayers.contains(uuid)) continue;
-
-                Player player = Bukkit.getPlayer(uuid);
-                if (player == null) continue;
-
-                //No spectators in race
-                if (player.getGameMode() == GameMode.SPECTATOR) {
-                    player.setGameMode(GameMode.ADVENTURE);
-                }
-
-                if (ghostPlayers) {
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 50, 0, true, false, false));
-                }
-
-                Team team = PlayerManager.getPlayer(uuid).getTeam();
-                if (team.getName().equals("finished")) {
-                    hasFinished(player);
-                }
-            }
-        }, countDown * 20, 1);
-        updateRequirements();
+        }, 20L * countDown);
     }
 
-    private void hasFinished(Player finished) {
+    /**
+     * Runs every tick if the game has started
+     */
+    private void tick() {
+        onTick();
+
+        //stop race if everyone has finished
+        if (players.stream().allMatch(RacePlayer::isFinished)) {
+            stop();
+            sendMessage(Main.PREFIX + "Race has ended");
+        }
+
+        for (RacePlayer racePlayer : players) {
+            if (racePlayer.isFinished()) continue;
+
+            Player player = racePlayer.getPlayer();
+            if (player == null) continue;
+
+            //No spectators in race
+            if (player.getGameMode() == GameMode.SPECTATOR) {
+                player.setGameMode(GameMode.ADVENTURE);
+            }
+
+            if (ghostPlayers) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 50, 0, true, false, false));
+            }
+
+            Team team = PlayerManager.getPlayer(racePlayer.getUniqueId()).getTeam();
+            if (team.getName().equals("finished")) {
+                setIsFinished(racePlayer);
+            }
+        }
+    }
+
+    /**
+     * Called when a player has finished
+     *
+     * @param racePlayer the player that finished
+     */
+    private void setIsFinished(RacePlayer racePlayer) {
+
+        Player player = racePlayer.getPlayer();
+
         //Make player visible
-        finished.removePotionEffect(PotionEffectType.INVISIBILITY);
+        player.removePotionEffect(PotionEffectType.INVISIBILITY);
 
         //Get finish time
         int time = -1;
@@ -151,22 +189,22 @@ public class Race {
         if (m != null) {
             Objective timeObjective = m.getMainScoreboard().getObjective("time");
             if (timeObjective != null) {
-                Score score = timeObjective.getScore(finished.getName());
+                Score score = timeObjective.getScore(player.getName());
                 if (score.isScoreSet()) {
                     time = score.getScore();
                 }
             }
         }
 
-        //Let players know
-        sendMessage(Main.PREFIX + ChatColor.GREEN + finished.getName() + " finished " + Util.ordinal(place) + " place!" + ChatColor.WHITE + " (" + Util.getTimeString(time) + ")");
-
-        finishedPlayers.add(finished.getUniqueId());
-        results.add(new RaceResult(finished.getUniqueId(), place, time));
+        onPlayerFinish(racePlayer, place, time);
+        racePlayer.setFinished(true, place, time);
 
         place++;
     }
 
+    /**
+     * Update command requirements
+     */
     private void updateRequirements() {
         //If race is public, update everyone
         if (isPublic) {
@@ -184,13 +222,12 @@ public class Race {
     }
 
     public void stop() {
-        //show results if any
-        if (results.size() > 0) printResults();
-
-        for (UUID p : players) {
-            Player player = Bukkit.getPlayer(p);
+        for (RacePlayer racePlayer : players) {
+            Player player = racePlayer.getPlayer();
             if (player != null) player.removeScoreboardTag("inRace");
         }
+
+        onRaceStop();
         cancelTasks();
         isStarting = false;
         hasStarted = false;
@@ -206,7 +243,8 @@ public class Race {
         if (addedPlayer == null) return;
 
         sendMessageToRaceMembers(Main.PREFIX + addedPlayer.getName() + " has joined the race");
-        players.add(uuid);
+        RacePlayer newPlayer = new RacePlayer(this, uuid);
+        players.add(newPlayer);
 
         PlayerWrapper pw = PlayerManager.getPlayer(uuid);
         pw.setInRace(true);
@@ -217,10 +255,11 @@ public class Race {
         }
 
         PlayerManager.getPlayer(owner).updateRequirements();
+        onRacePlayerJoin(newPlayer);
     }
 
     public boolean hasPlayer(UUID uuid) {
-        return players.contains(uuid);
+        return getRacePlayer(uuid) != null;
     }
 
     public void leavePlayer(UUID uuid) {
@@ -241,7 +280,7 @@ public class Race {
     }
 
     private void removePlayer(UUID uuid) {
-        players.remove(uuid);
+        players.remove(getRacePlayer(uuid));
 
         PlayerWrapper pw = PlayerManager.getPlayer(uuid);
         pw.setInRace(false);
@@ -252,10 +291,6 @@ public class Race {
         }
 
         PlayerManager.getPlayer(owner).updateRequirements();
-    }
-
-    public List<UUID> getPlayers() {
-        return players;
     }
 
     protected void disband() {
@@ -270,16 +305,17 @@ public class Race {
             wPlayer.removeInvite(owner);
         });
 
-        for (UUID p : players) {
-            PlayerWrapper pw = PlayerManager.getPlayer(p);
+        for (RacePlayer racePlayer : players) {
+            PlayerWrapper pw = PlayerManager.getPlayer(racePlayer.getUniqueId());
             pw.setInRace(false);
 
-            Player player = Bukkit.getPlayer(p);
+            Player player = racePlayer.getPlayer();
             if (player == null) continue; //we can do nothing with offline players
 
             player.removeScoreboardTag("inRace");
 
-            if (!p.equals(owner)) player.sendMessage(Main.PREFIX + this.name + " has disbanded the race");
+            if (!racePlayer.getUniqueId().equals(owner))
+                player.sendMessage(Main.PREFIX + "The race has been disbanded");
         }
     }
 
@@ -287,10 +323,7 @@ public class Race {
         if (countDownTask != null) countDownTask.cancel();
         if (countDownStopTask != null) countDownStopTask.cancel();
         if (playingTask != null) playingTask.cancel();
-    }
-
-    public boolean isOwner(UUID uniqueId) {
-        return uniqueId.equals(owner);
+        onCancelTasks();
     }
 
     public UUID getOwner() {
@@ -316,17 +349,6 @@ public class Race {
         return true;
     }
 
-    public boolean isPvp() {
-        return pvp;
-    }
-
-    public boolean setPvp(boolean value) {
-        if (value == pvp) return false;
-
-        pvp = value;
-        return true;
-    }
-
     public boolean setBroadcast(boolean value) {
         if (value == broadcast) return false;
 
@@ -340,10 +362,6 @@ public class Race {
 
     public boolean hasStarted() {
         return hasStarted;
-    }
-
-    public boolean hasFinished(UUID player) {
-        return finishedPlayers.contains(player);
     }
 
     public void invitePlayer(UUID invited) {
@@ -373,8 +391,8 @@ public class Race {
     }
 
     public void sendMessageToRaceMembers(String message) {
-        for (UUID uuid : players) {
-            Player p = Bukkit.getPlayer(uuid);
+        for (RacePlayer racePlayer : players) {
+            Player p = racePlayer.getPlayer();
             if (p != null) p.sendMessage(message);
         }
     }
@@ -386,13 +404,11 @@ public class Race {
         return true;
     }
 
-    public List<RaceResult> getResults() {
-        return results;
-    }
-
     public void printResults() {
         sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           " + ChatColor.RESET + "" + ChatColor.BOLD + " Results " + ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           ");
-        results.forEach(raceResult -> sendMessage(raceResult.toString()));
+        for (RacePlayer player : players) {
+            sendMessage(player.toString());
+        }
         sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "                                    ");
     }
 
@@ -411,11 +427,11 @@ public class Race {
         if (timeObj == null) return time;
 
 
-        for (UUID uuid : players) {
-            if (uuid.equals(excludedPlayer)) continue;
+        for (RacePlayer racePlayer : players) {
+            if (racePlayer.getUniqueId().equals(excludedPlayer)) continue;
 
             //if player is online
-            Player player = Bukkit.getPlayer(uuid);
+            Player player = racePlayer.getPlayer();
             if (player != null) {
                 time = timeObj.getScore(player.getName()).getScore(); //we found our time!
                 break;
@@ -427,10 +443,21 @@ public class Race {
 
     public int getOnlinePlayerCount() {
         int count = 0;
-        for (UUID player : players) {
-            if (Bukkit.getPlayer(player) != null) count++;
+        for (RacePlayer player : players) {
+            if (player.getPlayer() != null) count++;
         }
         return count;
+    }
+
+    public List<RacePlayer> getOnlinePlayers() {
+        List<RacePlayer> result = new ArrayList<>();
+
+        for (RacePlayer player : players) {
+            if (player.isOnline()) {
+                result.add(player);
+            }
+        }
+        return result;
     }
 
     public String getName() {
@@ -477,4 +504,53 @@ public class Race {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "execute as " + player.getName() + " at @s run function " + Main.startFunction);
         }
     }
+
+    public RacePlayer getRacePlayer(UUID uniqueId) {
+        for (RacePlayer player : players) {
+            if (player.getUniqueId().equals(uniqueId)) return player;
+        }
+        return null;
+    }
+
+    public List<RacePlayer> getPlayers() {
+        return players;
+    }
+
+    public boolean isOwner(UUID uniqueId) {
+        return uniqueId.equals(owner);
+    }
+
+    public void onPlayerFinish(RacePlayer player, int place, int time) {
+        //Let players know
+        sendMessage(Main.PREFIX + ChatColor.GREEN + player.getName() + " finished " + Util.ordinal(place) + " place!" + ChatColor.WHITE + " (" + Util.getTimeString(time) + ")");
+    }
+
+    public void onCountdownFinish() {
+        players.stream().map(RacePlayer::getPlayer).filter(Objects::nonNull).forEach(player -> {
+            player.sendTitle(" ", ChatColor.BOLD + "GO", 2, 18, 2);
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 2);
+        });
+    }
+
+    protected abstract void onPlayerStart(RacePlayer player);
+
+    protected abstract void onRaceStop();
+
+    public abstract void onTick();
+
+    public abstract void onPlayerDamagedByPlayer(EntityDamageByEntityEvent e, RacePlayer player, RacePlayer attacker);
+
+    public abstract void onPlayerQuit(PlayerQuitEvent e, RacePlayer player);
+
+    public abstract void onPlayerHeal(EntityRegainHealthEvent e, RacePlayer player);
+
+    public abstract void onPlayerJoin(PlayerJoinEvent e, RacePlayer player);
+
+    public abstract void onRacePlayerJoin(RacePlayer player);
+
+    public abstract void onPlayerMove(PlayerMoveEvent e, RacePlayer player);
+
+    public abstract void onCancelTasks();
+
+    public abstract void onPlayerRespawn(PlayerRespawnEvent e, RacePlayer racePlayer);
 }
