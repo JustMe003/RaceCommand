@@ -55,7 +55,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>D:\Servers\network\parkour-paradise\plugins</outputDirectory>
+              <outputDirectory>D:\Servers\network\parkour-spiral\plugins</outputDirectory>
               <resources>
                 <resource>
                   <directory>/target</directory>

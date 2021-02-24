@@ -19,7 +19,7 @@ public class PvpRace extends Race {
     }
 
     @Override
-    protected void onPlayerStart(RacePlayer player) {
+    protected void onPlayerStart(RacePlayer racePlayer) {
         
     }
 
@@ -36,20 +36,20 @@ public class PvpRace extends Race {
     }
 
     @Override
-    public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent e, RacePlayer player, RacePlayer attacker) {
+    public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent e, RacePlayer target, RacePlayer attacker) {
         e.setCancelled(false);
     }
 
     @Override
-    public void onPlayerQuit(PlayerQuitEvent e, RacePlayer player) {
+    public void onPlayerQuit(PlayerQuitEvent e, RacePlayer racePlayer) {
     }
 
     @Override
-    public void onPlayerHeal(EntityRegainHealthEvent e, RacePlayer player) {
+    public void onPlayerHeal(EntityRegainHealthEvent e, RacePlayer racePlayer) {
     }
 
     @Override
-    public void onPlayerJoin(PlayerJoinEvent e, RacePlayer player) {
+    public void onPlayerJoin(PlayerJoinEvent e, RacePlayer racePlayer) {
     }
 
     @Override
@@ -58,7 +58,7 @@ public class PvpRace extends Race {
     }
 
     @Override
-    public void onPlayerMove(PlayerMoveEvent e, RacePlayer player) {
+    public void onPlayerMove(PlayerMoveEvent e, RacePlayer racePlayer) {
     }
 
     @Override
@@ -67,6 +67,11 @@ public class PvpRace extends Race {
 
     @Override
     public void onPlayerRespawn(PlayerRespawnEvent e, RacePlayer racePlayer) {
+
+    }
+
+    @Override
+    protected void onPlayerRemoved(UUID racePlayer) {
 
     }
 }

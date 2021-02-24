@@ -35,13 +35,14 @@ public class InfectedRace extends Race {
     }
 
     @Override
-    protected void onPlayerStart(RacePlayer player) {
+    protected void onPlayerStart(RacePlayer racePlayer) {
 
     }
 
 
     @Override
     public void onRaceStop() {
+
         //reset skins 3 sec after stop
         Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
             for (RacePlayer p : getPlayers()) {
@@ -53,6 +54,8 @@ public class InfectedRace extends Race {
                 player.setMaxHealth(20);
             }
         }, 60);
+
+        sendMessage(Main.PREFIX + "stopped race");
     }
 
     public void setFirstInfected(RacePlayer player) {
@@ -143,54 +146,54 @@ public class InfectedRace extends Race {
     }
 
     @Override
-    public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent e, RacePlayer player, RacePlayer attacker) {
+    public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent e, RacePlayer target, RacePlayer attacker) {
 
         //if freeze countdown is active or one player is skeleton
-        if (!freezeTimer.isCancelled() || attacker.isSkeleton() || player.isSkeleton()) {
+        if (!freezeTimer.isCancelled() || attacker.isSkeleton() || target.isSkeleton()) {
             e.setCancelled(true); //disable pvp
             return;
         }
 
         //if infected hits player - 2 damage
-        if (attacker.isInfected() && !player.isInfected()) {
+        if (attacker.isInfected() && !target.isInfected()) {
             e.setDamage(0);
 
-            PlayerWrapper wPlayer = player.getWrapper();
+            PlayerWrapper wPlayer = target.getWrapper();
 
             double health = wPlayer.getMaxHealth() - 1.5;
             wPlayer.setMaxHealth(health);
 
             //spawn damage particle
-            Player bukkitPlayer = player.getPlayer();
+            Player bukkitPlayer = target.getPlayer();
             Location loc = bukkitPlayer.getLocation();
             bukkitPlayer.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, loc.getX(), loc.getY() + 1, loc.getZ(), 2, 0.1, 0.1, 0.1, 0.2);
 
             //if player dies by the damage, turn infected
             if (health <= 0) {
-                Player mPlayer = player.getPlayer();
+                Player mPlayer = target.getPlayer();
 
                 mPlayer.sendTitle(" ", ChatColor.GREEN + "" + ChatColor.BOLD + "You have been infected!", 10, 60, 10);
-                player.getRace().sendMessage(Main.PREFIX + player.getName() + " got infected!");
+                target.getRace().sendMessage(Main.PREFIX + target.getName() + " got infected!");
                 mPlayer.playSound(mPlayer.getLocation(), Sound.ENTITY_ZOMBIE_INFECT, 1.0F, 1.0F);
 
-                player.setInfected(true);
+                target.setInfected(true);
                 onPlayerInfected();
             } else {
-                player.getPlayer().setHealth(health);
+                target.getPlayer().setHealth(health);
             }
-        } else if (!attacker.isInfected() && player.isInfected()) {
+        } else if (!attacker.isInfected() && target.isInfected()) {
             e.setDamage(0);
 
-            double health = player.getPlayer().getHealth() - 6;
-            Player infected = player.getPlayer();
+            double health = target.getPlayer().getHealth() - 6;
+            Player infected = target.getPlayer();
             infected.playSound(infected.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_HURT, 1.0F, 1.0F);
 
             //if infected dies, cancel
             if (health <= 0) {
-                onInfectedDied(player);
+                onInfectedDied(target);
                 e.setCancelled(true);
             } else {
-                player.getPlayer().setHealth(health);
+                target.getPlayer().setHealth(health);
             }
         } else {
             e.setCancelled(true);
@@ -220,23 +223,23 @@ public class InfectedRace extends Race {
     }
 
     @Override
-    public void onPlayerQuit(PlayerQuitEvent e, RacePlayer player) {
-        if (player.isInfected()) {
-            player.setInfected(false);
+    public void onPlayerQuit(PlayerQuitEvent e, RacePlayer racePlayer) {
+        if (racePlayer.isInfected()) {
+            racePlayer.setInfected(false);
         }
     }
 
     @Override
-    public void onPlayerHeal(EntityRegainHealthEvent e, RacePlayer player) {
-        if (player.isSkeleton()) {
+    public void onPlayerHeal(EntityRegainHealthEvent e, RacePlayer racePlayer) {
+        if (racePlayer.isSkeleton()) {
             e.setCancelled(true); //disable healing for skeletons
         }
     }
 
     @Override
-    public void onPlayerJoin(PlayerJoinEvent e, RacePlayer player) {
-        PlayerWrapper wPlayer = player.getWrapper();
-        if (player.isInfected()) {
+    public void onPlayerJoin(PlayerJoinEvent e, RacePlayer racePlayer) {
+        PlayerWrapper wPlayer = racePlayer.getWrapper();
+        if (racePlayer.isInfected()) {
             wPlayer.changeSkin("zombie_villager");
         } else {
             wPlayer.changeSkin("villager");
@@ -249,18 +252,18 @@ public class InfectedRace extends Race {
     }
 
     @Override
-    public void onPlayerMove(PlayerMoveEvent e, RacePlayer player) {
+    public void onPlayerMove(PlayerMoveEvent e, RacePlayer racePlayer) {
 
         boolean freezePlayer = false;
 
         //freeze first infected player
-        if (player.equals(firstInfected)) {
+        if (racePlayer.equals(firstInfected)) {
             if (freezeTimer != null && !freezeTimer.isCancelled()) {
                 freezePlayer = true;
             }
         }
 
-        if (player.isSkeleton()) freezePlayer = true;
+        if (racePlayer.isSkeleton()) freezePlayer = true;
 
         if (freezePlayer) {
             Location to = e.getFrom();
@@ -281,6 +284,16 @@ public class InfectedRace extends Race {
         if (!racePlayer.isInfected()) {
             PlayerWrapper wPlayer = racePlayer.getWrapper();
             wPlayer.setMaxHealth(wPlayer.getMaxHealth());
+        }
+    }
+
+    @Override
+    protected void onPlayerRemoved(UUID uuid) {
+        if (uuid.equals(firstInfected.getUniqueId())) {
+            if (!hasStarted()) {
+                firstInfected = null;
+                sendMessage(Main.PREFIX + "First infected has left! Setting to random player...");
+            }
         }
     }
 

@@ -291,6 +291,7 @@ public abstract class Race {
         }
 
         PlayerManager.getPlayer(owner).updateRequirements();
+        onPlayerRemoved(uuid);
     }
 
     protected void disband() {
@@ -532,25 +533,27 @@ public abstract class Race {
         });
     }
 
-    protected abstract void onPlayerStart(RacePlayer player);
+    protected abstract void onPlayerStart(RacePlayer racePlayer);
 
     protected abstract void onRaceStop();
 
     public abstract void onTick();
 
-    public abstract void onPlayerDamagedByPlayer(EntityDamageByEntityEvent e, RacePlayer player, RacePlayer attacker);
+    public abstract void onPlayerDamagedByPlayer(EntityDamageByEntityEvent e, RacePlayer target, RacePlayer attacker);
 
-    public abstract void onPlayerQuit(PlayerQuitEvent e, RacePlayer player);
+    public abstract void onPlayerQuit(PlayerQuitEvent e, RacePlayer racePlayer);
 
-    public abstract void onPlayerHeal(EntityRegainHealthEvent e, RacePlayer player);
+    public abstract void onPlayerHeal(EntityRegainHealthEvent e, RacePlayer racePlayer);
 
-    public abstract void onPlayerJoin(PlayerJoinEvent e, RacePlayer player);
+    public abstract void onPlayerJoin(PlayerJoinEvent e, RacePlayer racePlayer);
 
     public abstract void onRacePlayerJoin(RacePlayer player);
 
-    public abstract void onPlayerMove(PlayerMoveEvent e, RacePlayer player);
+    public abstract void onPlayerMove(PlayerMoveEvent e, RacePlayer racePlayer);
 
     public abstract void onCancelTasks();
 
     public abstract void onPlayerRespawn(PlayerRespawnEvent e, RacePlayer racePlayer);
+
+    protected abstract void onPlayerRemoved(UUID racePlayer);
 }
