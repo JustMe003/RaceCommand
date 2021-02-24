@@ -136,8 +136,10 @@ public class InfectedRace extends Race {
 
     @Override
     public void onPlayerFinish(RacePlayer player, int place, int time) {
-        sendMessage(Main.PREFIX + ChatColor.DARK_GREEN + player.getName() + ChatColor.RESET + ChatColor.GREEN + " escaped! Players win!");
-        stop();
+        if (!player.isInfected()) {
+            sendMessage(Main.PREFIX + ChatColor.DARK_GREEN + player.getName() + ChatColor.RESET + ChatColor.GREEN + " escaped! Villagers win!");
+            stop();
+        }
     }
 
     @Override
