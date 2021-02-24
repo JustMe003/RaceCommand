@@ -42,7 +42,6 @@ public abstract class Race {
     private BukkitTask countDownStopTask;
     private BukkitTask playingTask;
 
-
     public Race(UUID owner, String name) {
 
         this.owner = owner;
@@ -242,7 +241,7 @@ public abstract class Race {
         Player addedPlayer = Bukkit.getPlayer(uuid);
         if (addedPlayer == null) return;
 
-        sendMessageToRaceMembers(Main.PREFIX + addedPlayer.getName() + " has joined the race");
+        sendMessageToRaceMembers(Main.PREFIX + ChatColor.GREEN + "+ " + ChatColor.RESET + ChatColor.GRAY + addedPlayer.getName());
         RacePlayer newPlayer = new RacePlayer(this, uuid);
         players.add(newPlayer);
 
@@ -264,8 +263,6 @@ public abstract class Race {
 
     public void leavePlayer(UUID uuid) {
         removePlayer(uuid);
-        OfflinePlayer leftPlayer = Bukkit.getOfflinePlayer(uuid);
-        sendMessageToRaceMembers(Main.PREFIX + leftPlayer.getName() + " has left the race");
     }
 
     public void kickPlayer(UUID uuid) {
@@ -275,12 +272,13 @@ public abstract class Race {
         if (kickedPlayer.isOnline()) {
             kickedPlayer.getPlayer().sendMessage(Main.PREFIX + "You have been kicked from the race");
         }
-
-        sendMessageToRaceMembers(Main.PREFIX + kickedPlayer.getName() + " has been kicked from the race");
     }
 
     private void removePlayer(UUID uuid) {
-        players.remove(getRacePlayer(uuid));
+        RacePlayer racePlayer = getRacePlayer(uuid);
+        players.remove(racePlayer);
+
+        sendMessageToRaceMembers(Main.PREFIX + ChatColor.RED + "- " + ChatColor.RESET + ChatColor.GRAY + racePlayer.getName());
 
         PlayerWrapper pw = PlayerManager.getPlayer(uuid);
         pw.setInRace(false);
