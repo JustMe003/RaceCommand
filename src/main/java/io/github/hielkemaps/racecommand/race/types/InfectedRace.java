@@ -240,15 +240,15 @@ public class InfectedRace extends Race {
     public void onPlayerJoin(PlayerJoinEvent e, RacePlayer racePlayer) {
         PlayerWrapper wPlayer = racePlayer.getWrapper();
         if (racePlayer.isInfected()) {
-            wPlayer.changeSkin("zombie_villager");
+            wPlayer.changeSkin(racePlayer.getZombieSkin());
         } else {
-            wPlayer.changeSkin("villager");
+            wPlayer.changeSkin(racePlayer.getVillagerSkin());
         }
     }
 
     @Override
     public void onRacePlayerJoin(RacePlayer player) {
-        player.getWrapper().changeSkin("villager");
+        player.getWrapper().changeSkin(player.getVillagerSkin());
     }
 
     @Override

@@ -1,6 +1,7 @@
 package io.github.hielkemaps.racecommand.events;
 
 import dev.jorel.commandapi.CommandAPI;
+import io.github.hielkemaps.racecommand.abilities.Ability;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
@@ -11,13 +12,13 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.*;
 
+import java.util.List;
 import java.util.UUID;
 
 public class EventListener implements Listener {
@@ -154,6 +155,88 @@ public class EventListener implements Listener {
             }
 
             race.onPlayerMove(e, race.getRacePlayer(e.getPlayer().getUniqueId()));
+        }
+    }
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent e) {
+        //on right click
+        if (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR) {
+            PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
+
+            if (player.isInRace()) {
+
+                Race race = RaceManager.getRace(e.getPlayer().getUniqueId());
+                if (race == null) return;
+
+                RacePlayer racePlayer = race.getRacePlayer(e.getPlayer().getUniqueId());
+                List<Ability> abilities = racePlayer.getAbilities();
+                for (Ability ability : abilities) {
+                    if (ability.getItem().equals(e.getItem())) {
+                        ability.activate();
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerSwitchHandItem(PlayerSwapHandItemsEvent e) {
+        PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
+        if (player.isInRace()) {
+
+            Race race = RaceManager.getRace(e.getPlayer().getUniqueId());
+            if (race == null) return;
+
+            RacePlayer racePlayer = race.getRacePlayer(e.getPlayer().getUniqueId());
+            List<Ability> abilities = racePlayer.getAbilities();
+            for (Ability ability : abilities) {
+                if (ability.getItem().equals(e.getOffHandItem())) {
+                    e.setCancelled(true);
+                    return;
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDropItem(PlayerDropItemEvent e) {
+        PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
+        if (player.isInRace()) {
+
+            Race race = RaceManager.getRace(e.getPlayer().getUniqueId());
+            if (race == null) return;
+
+            RacePlayer racePlayer = race.getRacePlayer(e.getPlayer().getUniqueId());
+            List<Ability> abilities = racePlayer.getAbilities();
+            for (Ability ability : abilities) {
+                if (ability.getItem().equals(e.getItemDrop().getItemStack())) {
+                    e.setCancelled(true);
+                    return;
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onInventoryInteract(InventoryClickEvent e) {
+        if (e.getWhoClicked() instanceof Player) {
+            PlayerWrapper player = PlayerManager.getPlayer(e.getWhoClicked().getUniqueId());
+
+            if (player.isInRace()) {
+
+                Race race = RaceManager.getRace(e.getWhoClicked().getUniqueId());
+                if (race == null) return;
+
+                RacePlayer racePlayer = race.getRacePlayer(e.getWhoClicked().getUniqueId());
+                List<Ability> abilities = racePlayer.getAbilities();
+                for (Ability ability : abilities) {
+                    if (e.getCurrentItem().equals(ability.getItem())) {
+                        e.setCancelled(true);
+                        return;
+                    }
+                }
+            }
         }
     }
 }
