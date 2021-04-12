@@ -71,7 +71,7 @@ public class PvpRace extends Race {
     }
 
     @Override
-    protected void onPlayerRemoved(UUID racePlayer) {
+    protected void onPlayerLeave(RacePlayer racePlayer) {
 
     }
 }

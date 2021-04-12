@@ -2,6 +2,7 @@ package io.github.hielkemaps.racecommand.wrapper;
 
 import dev.jorel.commandapi.CommandAPI;
 import io.github.hielkemaps.racecommand.Main;
+import io.github.hielkemaps.racecommand.abilities.Ability;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
@@ -25,6 +26,8 @@ public class PlayerWrapper {
     private boolean hasChangedSkin = false;
     private double maxHealth = 20;
 
+    private final List<Ability> abilities = new ArrayList<>();
+
     private BukkitTask skeletonTimer;
 
     public PlayerWrapper(UUID uuid) {
@@ -41,6 +44,7 @@ public class PlayerWrapper {
         if (!inRace) {
             Bukkit.getLogger().info("Resetting skin and health");
             resetSkin();
+            removeAbilities();
             setMaxHealth(20);
             cancelTasks();
         }
@@ -182,7 +186,9 @@ public class PlayerWrapper {
 
     public void skeletonTimer(){
         Player infected = getPlayer();
+        infected.setHealth(2);
         infected.sendTitle("", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 10, 60, 10);
+        infected.playSound(infected.getLocation(), Sound.ENTITY_SKELETON_HURT, 0.5F, 1.0F);
 
         //heal infected slowly
         skeletonTimer = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), () -> {
@@ -209,6 +215,19 @@ public class PlayerWrapper {
             } else {
                 skeletonTimer.cancel();
             }
-        }, 10, 40);
+        }, 40, 40);
+    }
+
+    public void removeAbilities(){
+        abilities.forEach(Ability::removeAbility);
+        abilities.clear();
+    }
+
+    public void addAbility(Ability ability) {
+        abilities.add(ability);
+    }
+
+    public List<Ability> getAbilities() {
+        return abilities;
     }
 }

@@ -276,6 +276,8 @@ public abstract class Race {
 
     private void removePlayer(UUID uuid) {
         RacePlayer racePlayer = getRacePlayer(uuid);
+        onPlayerLeave(racePlayer);
+
         players.remove(racePlayer);
 
         sendMessageToRaceMembers(Main.PREFIX + ChatColor.RED + "- " + ChatColor.RESET + ChatColor.GRAY + racePlayer.getName());
@@ -289,7 +291,7 @@ public abstract class Race {
         }
 
         PlayerManager.getPlayer(owner).updateRequirements();
-        onPlayerRemoved(uuid);
+
     }
 
     protected void disband() {
@@ -553,5 +555,5 @@ public abstract class Race {
 
     public abstract void onPlayerRespawn(PlayerRespawnEvent e, RacePlayer racePlayer);
 
-    protected abstract void onPlayerRemoved(UUID racePlayer);
+    protected abstract void onPlayerLeave(RacePlayer racePlayer);
 }

@@ -164,58 +164,42 @@ public class EventListener implements Listener {
         if (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR) {
             PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
 
-            if (player.isInRace()) {
-
-                Race race = RaceManager.getRace(e.getPlayer().getUniqueId());
-                if (race == null) return;
-
-                RacePlayer racePlayer = race.getRacePlayer(e.getPlayer().getUniqueId());
-                List<Ability> abilities = racePlayer.getAbilities();
-                for (Ability ability : abilities) {
-                    if (ability.getItem().equals(e.getItem())) {
-                        ability.activate();
-                    }
+            List<Ability> abilities = player.getAbilities();
+            for (Ability ability : abilities) {
+                if (ability.getItem().equals(e.getItem())) {
+                    ability.activate();
                 }
             }
         }
+
     }
 
     @EventHandler
     public void onPlayerSwitchHandItem(PlayerSwapHandItemsEvent e) {
         PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
-        if (player.isInRace()) {
 
-            Race race = RaceManager.getRace(e.getPlayer().getUniqueId());
-            if (race == null) return;
-
-            RacePlayer racePlayer = race.getRacePlayer(e.getPlayer().getUniqueId());
-            List<Ability> abilities = racePlayer.getAbilities();
-            for (Ability ability : abilities) {
-                if (ability.getItem().equals(e.getOffHandItem())) {
-                    e.setCancelled(true);
-                    return;
-                }
+        List<Ability> abilities = player.getAbilities();
+        for (Ability ability : abilities) {
+            if (ability.getItem().equals(e.getOffHandItem())) {
+                e.setCancelled(true);
+                return;
             }
         }
+
     }
 
     @EventHandler
     public void onPlayerDropItem(PlayerDropItemEvent e) {
         PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
-        if (player.isInRace()) {
 
-            Race race = RaceManager.getRace(e.getPlayer().getUniqueId());
-            if (race == null) return;
-
-            RacePlayer racePlayer = race.getRacePlayer(e.getPlayer().getUniqueId());
-            List<Ability> abilities = racePlayer.getAbilities();
-            for (Ability ability : abilities) {
-                if (ability.getItem().equals(e.getItemDrop().getItemStack())) {
-                    e.setCancelled(true);
-                    return;
-                }
+        List<Ability> abilities = player.getAbilities();
+        for (Ability ability : abilities) {
+            if (ability.getItem().equals(e.getItemDrop().getItemStack())) {
+                e.setCancelled(true);
+                return;
             }
         }
+
     }
 
     @EventHandler
@@ -223,20 +207,14 @@ public class EventListener implements Listener {
         if (e.getWhoClicked() instanceof Player) {
             PlayerWrapper player = PlayerManager.getPlayer(e.getWhoClicked().getUniqueId());
 
-            if (player.isInRace()) {
-
-                Race race = RaceManager.getRace(e.getWhoClicked().getUniqueId());
-                if (race == null) return;
-
-                RacePlayer racePlayer = race.getRacePlayer(e.getWhoClicked().getUniqueId());
-                List<Ability> abilities = racePlayer.getAbilities();
-                for (Ability ability : abilities) {
-                    if (e.getCurrentItem().equals(ability.getItem())) {
-                        e.setCancelled(true);
-                        return;
-                    }
+            List<Ability> abilities = player.getAbilities();
+            for (Ability ability : abilities) {
+                if (e.getCurrentItem().equals(ability.getItem())) {
+                    e.setCancelled(true);
+                    return;
                 }
             }
+
         }
     }
 }

@@ -13,8 +13,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.UUID;
@@ -26,8 +24,8 @@ public class InfectedRace extends Race {
     private RacePlayer firstInfected = null;
     private int infectedDelay = 30;
 
-    private BukkitTask freezeTimer;
-    private BukkitTask stopFreezeTask;
+    private BukkitTask freezeTimer = null;
+    private BukkitTask stopFreezeTask = null;
 
 
     public InfectedRace(UUID owner, String name) {
@@ -58,6 +56,10 @@ public class InfectedRace extends Race {
         sendMessage(Main.PREFIX + "stopped race");
     }
 
+    public RacePlayer getFirstInfected() {
+        return firstInfected;
+    }
+
     public void setFirstInfected(RacePlayer player) {
         firstInfected = player;
     }
@@ -79,11 +81,11 @@ public class InfectedRace extends Race {
 
     @Override
     public void onTick() {
-        for (RacePlayer player : getPlayers()) {
-            if (player.isInfected()) {
-                player.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 20, 1, true, false, false));
-            }
-        }
+//        for (RacePlayer player : getPlayers()) {
+//            if (player.isInfected()) {
+//                //player.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 20, 1, true, false, false));
+//            }
+//        }
     }
 
     private void freezeInfected() {
@@ -134,6 +136,7 @@ public class InfectedRace extends Race {
             Player player = firstInfected.getPlayer();
             sendMessage(Main.PREFIX + ChatColor.DARK_GREEN + player.getName() + ChatColor.RESET + ChatColor.GREEN + " has been unleashed!");
             player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1f, 1f);
+            firstInfected.addAbilities(); //enable abilities
         }, 20L * infectedDelay);
     }
 
@@ -288,8 +291,8 @@ public class InfectedRace extends Race {
     }
 
     @Override
-    protected void onPlayerRemoved(UUID uuid) {
-        if (uuid.equals(firstInfected.getUniqueId())) {
+    protected void onPlayerLeave(RacePlayer racePlayer) {
+        if (racePlayer.equals(firstInfected)) {
             if (!hasStarted()) {
                 firstInfected = null;
                 sendMessage(Main.PREFIX + "First infected has left! Setting to random player...");
