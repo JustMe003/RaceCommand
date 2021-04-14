@@ -1,10 +1,6 @@
 package io.github.hielkemaps.racecommand.race;
 
 import io.github.hielkemaps.racecommand.Util;
-import io.github.hielkemaps.racecommand.abilities.BlindAbility;
-import io.github.hielkemaps.racecommand.abilities.GlowingAbility;
-import io.github.hielkemaps.racecommand.abilities.LeapAbility;
-import io.github.hielkemaps.racecommand.abilities.SpeedAbility;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
@@ -96,35 +92,23 @@ public class RacePlayer implements Comparable<RacePlayer> {
     public void setInfected(boolean value) {
         if (isInfected == value) return;
 
-        if (isOnline()) {
+        PlayerWrapper player = PlayerManager.getPlayer(uuid);
+        if (value) {
 
-            PlayerWrapper player = PlayerManager.getPlayer(uuid);
-            if (value) {
-
-                //Only add abilities if race has started, and player is NOT first infected (because freeze countdown handles that)
-                InfectedRace infectedRace = (InfectedRace) race;
-                if (race.hasStarted() && !infectedRace.getFirstInfected().getUniqueId().equals(uuid)) {
-                    addAbilities();
-                }
-
-                player.changeSkin(getZombieSkin());
-                player.setMaxHealth(20);
-                getPlayer().setHealth(20);
-            } else {
-                isSkeleton = false;
-                player.removeAbilities();
-                player.changeSkin(getVillagerSkin());
+            //Only add abilities if race has started, and player is NOT first infected (because freeze countdown handles that)
+            InfectedRace infectedRace = (InfectedRace) race;
+            if (infectedRace.hasStarted() && !infectedRace.getFirstInfected().getUniqueId().equals(uuid)) {
+                player.addAbilities();
             }
-            isInfected = value;
-        }
-    }
 
-    public void addAbilities() {
-        PlayerWrapper player = getWrapper();
-        player.addAbility(new SpeedAbility((InfectedRace) race, uuid, 0));
-        player.addAbility(new LeapAbility((InfectedRace) race, uuid, 1));
-        player.addAbility(new BlindAbility((InfectedRace) race, uuid, 2));
-        player.addAbility(new GlowingAbility((InfectedRace) race, uuid, 3));
+            player.changeSkin(getZombieSkin());
+            player.setMaxHealth(20);
+        } else {
+            isSkeleton = false;
+            player.removeAbilities();
+            player.changeSkin(getVillagerSkin());
+        }
+        isInfected = value;
     }
 
     public String getVillagerSkin() {
@@ -136,7 +120,7 @@ public class RacePlayer implements Comparable<RacePlayer> {
     }
 
     public boolean isOnline() {
-        return Bukkit.getPlayer(uuid) != null;
+        return Bukkit.getOfflinePlayer(uuid).isOnline();
     }
 
     public Race getRace() {
@@ -150,12 +134,14 @@ public class RacePlayer implements Comparable<RacePlayer> {
             PlayerWrapper p = PlayerManager.getPlayer(uuid);
             if (value) {
                 p.changeSkin("skeleton");
+                p.hideAbilities();
                 p.skeletonTimer();
-            } else {
+            } else if (isInfected) {
                 p.changeSkin(getZombieSkin());
+                p.showAbilities();
             }
-            isSkeleton = value;
         }
+        isSkeleton = value;
     }
 
     public boolean isSkeleton() {

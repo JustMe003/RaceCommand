@@ -13,6 +13,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.UUID;
@@ -20,13 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class InfectedRace extends Race {
 
-
     private RacePlayer firstInfected = null;
-    private int infectedDelay = 30;
+    private int infectedDelay = 5;
+    private boolean randomFirstInfected = true;
 
     private BukkitTask freezeTimer = null;
     private BukkitTask stopFreezeTask = null;
-
 
     public InfectedRace(UUID owner, String name) {
         super(owner, name);
@@ -41,19 +41,20 @@ public class InfectedRace extends Race {
     @Override
     public void onRaceStop() {
 
-        //reset skins 3 sec after stop
+        int delay = 0;
+        boolean infectedWon = getOnlinePlayers().stream().allMatch(RacePlayer::isInfected);
+        if (infectedWon) delay = 60;  //reset skins 3 sec after stop if infected won (to show how kewl they are)
+
         Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
             for (RacePlayer p : getPlayers()) {
-                if (p.isInfected()) {
-                    p.setInfected(false);
-                }
+                p.setInfected(false);
 
                 PlayerWrapper player = p.getWrapper();
                 player.setMaxHealth(20);
             }
-        }, 60);
+        }, delay);
 
-        sendMessage(Main.PREFIX + "stopped race");
+        sendMessage(Main.PREFIX + "Stopped race");
     }
 
     public RacePlayer getFirstInfected() {
@@ -62,16 +63,19 @@ public class InfectedRace extends Race {
 
     public void setFirstInfected(RacePlayer player) {
         firstInfected = player;
+        randomFirstInfected = false;
     }
 
     @Override
     public void onCountdownFinish() {
 
         //set first infected
-        if (firstInfected == null || !firstInfected.isOnline()) {
+        if (firstInfected == null || !firstInfected.isOnline() || randomFirstInfected) {
             firstInfected = Util.getRandomItem(getOnlinePlayers());
         }
         firstInfected.setInfected(true);
+        firstInfected.getPlayer().removePotionEffect(PotionEffectType.INVISIBILITY); //make first infected visible
+
         sendMessage(Main.PREFIX + ChatColor.DARK_GREEN + firstInfected.getName() + ChatColor.RESET +
                 ChatColor.GREEN + " is the first infected! They will be set free in " + ChatColor.DARK_GREEN +
                 ChatColor.BOLD + infectedDelay + ChatColor.RESET + ChatColor.GREEN + " seconds!");
@@ -81,17 +85,22 @@ public class InfectedRace extends Race {
 
     @Override
     public void onTick() {
-//        for (RacePlayer player : getPlayers()) {
-//            if (player.isInfected()) {
-//                //player.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 20, 1, true, false, false));
-//            }
-//        }
+
+        int infectedPlayers = 0;
+        for (RacePlayer player : getOnlinePlayers()) {
+            if (player.isInfected()) infectedPlayers++;
+        }
+
+        if (infectedPlayers == 0) {
+            villagersWon();
+        } else if (infectedPlayers == getOnlinePlayerCount()) {
+            infectedWon();
+        }
     }
 
     private void freezeInfected() {
 
         AtomicInteger seconds = new AtomicInteger(infectedDelay);
-
 
         //Countdown
         freezeTimer = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), () -> {
@@ -103,7 +112,7 @@ public class InfectedRace extends Race {
 
                 sendMessage(Main.PREFIX + ChatColor.DARK_GREEN + firstInfected.getName() + ChatColor.RESET + ChatColor.GREEN + " has left!");
 
-                firstInfected = Util.getRandomItem(getOnlinePlayers()); //pick new random infected
+                firstInfected = Util.getRandomItem(getOnlinePlayers()); //pick new random first infected
                 firstInfected.setInfected(true);
                 player = firstInfected.getPlayer();
 
@@ -136,16 +145,37 @@ public class InfectedRace extends Race {
             Player player = firstInfected.getPlayer();
             sendMessage(Main.PREFIX + ChatColor.DARK_GREEN + player.getName() + ChatColor.RESET + ChatColor.GREEN + " has been unleashed!");
             player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1f, 1f);
-            firstInfected.addAbilities(); //enable abilities
+            firstInfected.getWrapper().addAbilities();  //enable abilities
         }, 20L * infectedDelay);
     }
 
     @Override
     public void onPlayerFinish(RacePlayer player, int place, int time) {
         if (!player.isInfected()) {
-            sendMessage(Main.PREFIX + ChatColor.DARK_GREEN + player.getName() + ChatColor.RESET + ChatColor.GREEN + " escaped! Villagers win!");
-            stop();
+            villagersWon();
         }
+    }
+
+    private void villagersWon() {
+        for (RacePlayer p : getPlayers()) {
+            if (p.isOnline()) {
+                p.getPlayer().sendTitle(" ", ChatColor.BOLD + "" + ChatColor.YELLOW + "Villagers won!", 10, 60, 10);
+                p.getPlayer().playSound(p.getPlayer().getLocation(), Sound.ENTITY_VILLAGER_CELEBRATE, 100f, 1f);
+            }
+        }
+        sendMessage(Main.PREFIX + ChatColor.WHITE + "Villagers won the game!");
+        stop();
+    }
+
+    private void infectedWon() {
+        for (RacePlayer p : getPlayers()) {
+            if (p.isOnline()) {
+                p.getPlayer().sendTitle(" ", ChatColor.BOLD + "" + ChatColor.DARK_GREEN + "Infected won!", 10, 60, 10);
+                p.getPlayer().playSound(p.getPlayer().getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_AMBIENT, 100f, 0.5f);
+            }
+        }
+        sendMessage(Main.PREFIX + ChatColor.GREEN + "Infected won the game!");
+        stop();
     }
 
     @Override
@@ -163,7 +193,7 @@ public class InfectedRace extends Race {
 
             PlayerWrapper wPlayer = target.getWrapper();
 
-            double health = wPlayer.getMaxHealth() - 1.5;
+            double health = wPlayer.getMaxHealth() - 2;
             wPlayer.setMaxHealth(health);
 
             //spawn damage particle
@@ -180,16 +210,19 @@ public class InfectedRace extends Race {
                 mPlayer.playSound(mPlayer.getLocation(), Sound.ENTITY_ZOMBIE_INFECT, 1.0F, 1.0F);
 
                 target.setInfected(true);
-                onPlayerInfected();
             } else {
-                target.getPlayer().setHealth(health);
+
+                //fix health if over max health
+                if (bukkitPlayer.getHealth() > wPlayer.getMaxHealth()) {
+                    target.getPlayer().setHealth(health);
+                }
             }
         } else if (!attacker.isInfected() && target.isInfected()) {
             e.setDamage(0);
 
-            double health = target.getPlayer().getHealth() - 6;
+            double health = target.getPlayer().getHealth() - 4;
             Player infected = target.getPlayer();
-            infected.playSound(infected.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_HURT, 1.0F, 1.0F);
+            infected.getWorld().playSound(infected.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_HURT, 1.0F, 1.0F);
 
             //if infected dies, cancel
             if (health <= 0) {
@@ -205,30 +238,22 @@ public class InfectedRace extends Race {
 
     private void onInfectedDied(RacePlayer player) {
         Player infected = player.getPlayer();
-        infected.playSound(infected.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_DEATH, 1.0F, 1.0F);
+        infected.getWorld().playSound(infected.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_DEATH, 1.0F, 1.0F);
 
         //Skeleton skin
         player.setSkeleton(true);
     }
 
-    private void onPlayerInfected() {
-
-        //if everyone is infected
-        if (getPlayers().stream().allMatch(RacePlayer::isInfected)) {
-
-            for (RacePlayer p : getPlayers()) {
-                p.getPlayer().sendTitle(" ", ChatColor.BOLD + "" + ChatColor.DARK_GREEN + "Infected won!", 10, 60, 10);
-                p.getPlayer().playSound(p.getPlayer().getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_AMBIENT, 100f, 0.5f);
-            }
-            sendMessage(Main.PREFIX + ChatColor.GREEN + "Infected won the game!");
-            stop();
-        }
-    }
-
     @Override
     public void onPlayerQuit(PlayerQuitEvent e, RacePlayer racePlayer) {
-        if (racePlayer.isInfected()) {
-            racePlayer.setInfected(false);
+
+        //Leave race if villager, otherwise you can cheat easily.
+        if (hasStarted() && !racePlayer.isInfected()) {
+
+            //owner is exception because we can't let him leave :/
+            if (!racePlayer.isOwner()) {
+                leavePlayer(racePlayer.getUniqueId());
+            }
         }
     }
 
@@ -242,10 +267,22 @@ public class InfectedRace extends Race {
     @Override
     public void onPlayerJoin(PlayerJoinEvent e, RacePlayer racePlayer) {
         PlayerWrapper wPlayer = racePlayer.getWrapper();
-        if (racePlayer.isInfected()) {
-            wPlayer.changeSkin(racePlayer.getZombieSkin());
-        } else {
+
+        if (!hasStarted()) {
             wPlayer.changeSkin(racePlayer.getVillagerSkin());
+            wPlayer.removeAbilities();
+            wPlayer.setMaxHealth(20);
+        } else {
+            if (racePlayer.isSkeleton()) {
+                wPlayer.changeSkin("skeleton");
+            }
+
+            if (racePlayer.isInfected()) {
+                wPlayer.changeSkin(racePlayer.getZombieSkin());
+            } else {
+                wPlayer.changeSkin(racePlayer.getVillagerSkin());
+                wPlayer.setMaxHealth(20);
+            }
         }
     }
 
@@ -296,6 +333,7 @@ public class InfectedRace extends Race {
             if (!hasStarted()) {
                 firstInfected = null;
                 sendMessage(Main.PREFIX + "First infected has left! Setting to random player...");
+                randomFirstInfected = true;
             }
         }
     }

@@ -1,19 +1,23 @@
 package io.github.hielkemaps.racecommand.abilities;
 
 import io.github.hielkemaps.racecommand.Main;
+import io.github.hielkemaps.racecommand.race.Race;
+import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
-import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 public abstract class Ability {
 
+    HashMap<Integer, ItemStack> queuedItems = new HashMap<>();
+
     final ItemStack item;
-    final InfectedRace race;
     final UUID uuid;
     final int duration;
     final int delay;
@@ -24,19 +28,24 @@ public abstract class Ability {
     BukkitTask tickTask = null;
 
     private boolean canRun = true;
+    private boolean isHidden = false;
 
-    public Ability(InfectedRace race, UUID uuid, int duration, int delay, ItemStack item, int slot) {
-        this.race = race;
+    public Ability(UUID uuid, int duration, int delay, ItemStack item, int slot) {
         this.uuid = uuid;
         this.duration = duration;
         this.delay = delay;
         this.slot = slot;
         this.item = item;
-        updateInventory(item);
     }
 
     private void updateInventory(ItemStack item) {
-        getPlayer().getInventory().setItem(slot, item); //put in players inventory
+
+        //if player is offline or hidden, we queue the item
+        if (getPlayer() == null || isHidden) {
+            queuedItems.put(slot, item);
+        } else {
+            getPlayer().getInventory().setItem(slot, item); //put in players inventory
+        }
     }
 
     public void activate() {
@@ -51,21 +60,27 @@ public abstract class Ability {
 
     // more coolDown the more infected there are
     private long getDuration() {
-        int infectedPlayers = getInfectedPlayerCount();
-
-        return infectedPlayers == 1 ? duration : (long) (duration * infectedPlayers * 0.5);
+        if (getRace() != null) {
+            int infectedPlayers = getInfectedPlayerCount();
+            return infectedPlayers == 1 ? duration : (long) (duration * infectedPlayers * 0.5);
+        }
+        return duration;
     }
 
     private int getInfectedPlayerCount() {
         int count = 0;
-        for (RacePlayer player : race.getPlayers()) {
+        for (RacePlayer player : getRace().getPlayers()) {
             if (player.isInfected()) count++;
         }
         return count;
     }
 
+    public Race getRace() {
+        return RaceManager.getRace(uuid);
+    }
+
     public void deActivate() {
-        onDeactivate();
+        onRemove();
 
         if (tickTask != null) {
             tickTask.cancel();
@@ -81,7 +96,9 @@ public abstract class Ability {
 
     abstract void onActivate();
 
-    abstract void onDeactivate();
+    abstract void onAdd();
+
+    abstract void onRemove();
 
     Player getPlayer() {
         return Bukkit.getPlayer(uuid);
@@ -91,11 +108,41 @@ public abstract class Ability {
         return item;
     }
 
-    public void removeAbility() {
-        getPlayer().getInventory().clear(slot);
+    public void add() {
+        onAdd();
+        canRun = true;
+        updateInventory(item);
+    }
+
+    public void remove() {
+        onRemove();
+        updateInventory(new ItemStack(Material.AIR));
 
         if (activateTask != null) activateTask.cancel();
         if (deactivateTask != null) deactivateTask.cancel();
         if (tickTask != null) tickTask.cancel();
+
+        queuedItems.clear();
+    }
+
+    public void hide() {
+        updateInventory(new ItemStack(Material.AIR));
+        isHidden = true;
+    }
+
+    public void show() {
+        isHidden = false;
+
+        if (activateTask == null) {
+            updateInventory(item);
+        } else if (activateTask.isCancelled()) {
+            updateInventory(item);
+        }
+    }
+
+
+    public void onPlayerJoin() {
+        queuedItems.forEach((integer, itemStack) -> getPlayer().getInventory().setItem(integer, itemStack));
+        queuedItems.clear();
     }
 }

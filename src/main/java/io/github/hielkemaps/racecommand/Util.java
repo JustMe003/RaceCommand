@@ -1,12 +1,7 @@
 package io.github.hielkemaps.racecommand;
 
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 
 public class Util {
 

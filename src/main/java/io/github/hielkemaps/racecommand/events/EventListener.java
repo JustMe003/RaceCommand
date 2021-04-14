@@ -1,13 +1,18 @@
 package io.github.hielkemaps.racecommand.events;
 
 import dev.jorel.commandapi.CommandAPI;
+import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.abilities.Ability;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,6 +20,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 
@@ -57,17 +63,15 @@ public class EventListener implements Listener {
         Player player = e.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        CommandAPI.updateRequirements(player);
+        PlayerWrapper wPlayer = PlayerManager.getPlayer(uuid);
+        wPlayer.onPlayerJoin();
 
         //Remove inRace tag if player is not in current active race
-        boolean removeTag = true;
         Race race = RaceManager.getRace(uuid);
         if (race != null) {
 
+            //if player rejoins in active race, we must sync times with the other players
             if (race.hasStarted()) {
-                removeTag = false;
-
-                //if player rejoins in active race, we must sync times with the other players
                 race.syncTime(player);
             }
 
@@ -75,41 +79,45 @@ public class EventListener implements Listener {
             if (race.isStarting()) {
                 player.performCommand("restart");
             }
-            race.onPlayerJoin(e, race.getRacePlayer(uuid));
-        }
-        if (removeTag) {
-            player.removeScoreboardTag("inRace");
 
-            PlayerWrapper wPlayer = PlayerManager.getPlayer(uuid);
-            wPlayer.setInRace(false);
+            race.onPlayerJoin(e, race.getRacePlayer(uuid));
+        }else{
+
+            //if player is NOT in race, but thinks it is, we need to change it
+            if(wPlayer.isInRace()){
+                player.removeScoreboardTag("inRace");
+                wPlayer.setInRace(false);
+            }
         }
+
+        CommandAPI.updateRequirements(player);
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
 
-        //Leave race when race hasn't started
-        //Otherwise you could easily cheat because you don't get tped when the race starts
+        //Leave or disband race when race hasn't started
+        //Otherwise you could easily cheat because you won't get tped when the race starts
         UUID player = e.getPlayer().getUniqueId();
         Race race = RaceManager.getRace(player);
         if (race != null) {
-            race.onPlayerQuit(e, race.getRacePlayer(e.getPlayer().getUniqueId()));
 
             //if after leaving there are 1 or no players left in the race, we disband it
             if (race.getOnlinePlayerCount() <= 2) {
                 RaceManager.disbandRace(race.getOwner());
             }
 
-            if (!race.isOwner(player)) {
-                if (!race.hasStarted()) {
-                    race.leavePlayer(player); //player leaves the race if it hasn't started yet
-                }
+            //if the race has not started yet and player is not owner
+            if (!race.hasStarted() && !race.isOwner(player)) {
+                race.leavePlayer(player); //player leaves the race if it hasn't started yet
             }
+
+            race.onPlayerQuit(e, race.getRacePlayer(e.getPlayer().getUniqueId()));
         }
     }
 
     @EventHandler
-    public void onPlayerDamaged(EntityDamageByEntityEvent e) {
+    public void onEntityDamage(EntityDamageByEntityEvent e) {
 
         //If player damages another player
         if (e.getDamager() instanceof Player && e.getEntity() instanceof Player) {
@@ -133,6 +141,34 @@ public class EventListener implements Listener {
                 }
             }
             e.setCancelled(true); //disable pvp
+        }
+
+        //Arrow detection
+        if (e.getEntity() instanceof Player && e.getDamager() instanceof Arrow) {
+            Arrow arrow = (Arrow) e.getDamager();
+
+            if (arrow.getScoreboardTags().contains("raceplugin")) {
+
+                Player player = (Player) e.getEntity();
+                PlayerWrapper p = PlayerManager.getPlayer(player.getUniqueId());
+                if (p.isInInfectedRace()) {
+                    Race race = RaceManager.getRace(player.getUniqueId());
+                    RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
+                    if (!racePlayer.isInfected()) {
+
+                        for (String scoreboardTag : arrow.getScoreboardTags()) {
+                            if (scoreboardTag.startsWith("race_")) {
+                                String id = scoreboardTag.substring(5);
+                                if (id.equals(race.getId().toString())) {
+                                    e.setCancelled(false); //allow damage
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+                e.setCancelled(true);
+            }
         }
     }
 
@@ -215,6 +251,30 @@ public class EventListener implements Listener {
                 }
             }
 
+        }
+    }
+
+    @EventHandler
+    public void onProjectileHit(ProjectileHitEvent e) {
+        if (e.getEntity() instanceof Arrow) {
+            Arrow arrow = (Arrow) e.getEntity();
+
+            if (arrow.getScoreboardTags().contains("raceplugin")) {
+                if (e.getHitBlock() != null) {
+                    arrow.remove();
+                }
+            }
+        }
+
+        if (e.getHitBlock() != null && e.getHitBlock().getType() == Material.CHORUS_FLOWER) {
+            BlockData data = e.getHitBlock().getBlockData();
+            e.getEntity().remove();
+            e.getHitBlock().setType(Material.AIR);
+
+            Bukkit.getScheduler().runTask(Main.getInstance(), () -> {
+                e.getHitBlock().setType(Material.CHORUS_FLOWER);
+                e.getHitBlock().setBlockData(data);
+            });
         }
     }
 }

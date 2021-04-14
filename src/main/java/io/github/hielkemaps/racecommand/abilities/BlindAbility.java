@@ -1,7 +1,7 @@
 package io.github.hielkemaps.racecommand.abilities;
 
+import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
-import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -19,8 +19,8 @@ public class BlindAbility extends Ability {
 
     private final List<Player> affectedPlayers = new ArrayList<>();
 
-    public BlindAbility(InfectedRace race, UUID uuid, int slot) {
-        super(race, uuid, 140, 500, item(), slot);
+    public BlindAbility(UUID uuid, int slot) {
+        super(uuid, 140, 500, item(), slot);
     }
 
     private static ItemStack item() {
@@ -43,6 +43,9 @@ public class BlindAbility extends Ability {
     @Override
     void onActivate() {
         Player abilityPlayer = getPlayer();
+
+        Race race = getRace();
+        if(race == null) return;
 
         //make villagers glow for 3 sec
         for (RacePlayer player : race.getPlayers()) {
@@ -67,7 +70,12 @@ public class BlindAbility extends Ability {
     }
 
     @Override
-    void onDeactivate() {
+    void onAdd() {
+
+    }
+
+    @Override
+    void onRemove() {
         affectedPlayers.clear();
     }
 }

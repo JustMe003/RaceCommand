@@ -1,6 +1,5 @@
 package io.github.hielkemaps.racecommand.abilities;
 
-import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -13,8 +12,8 @@ import java.util.UUID;
 public class LeapAbility extends Ability{
 
 
-    public LeapAbility(InfectedRace race, UUID uuid, int slot) {
-        super(race, uuid, 15, 200, item(), slot);
+    public LeapAbility(UUID uuid, int slot) {
+        super(uuid, 15, 1000, item(), slot);
     }
 
     private static ItemStack item() {
@@ -43,7 +42,12 @@ public class LeapAbility extends Ability{
     }
 
     @Override
-    public void onDeactivate() {
+    void onAdd() {
+
+    }
+
+    @Override
+    public void onRemove() {
 
     }
 }

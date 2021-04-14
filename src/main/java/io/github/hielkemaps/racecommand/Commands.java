@@ -270,8 +270,11 @@ public class Commands {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    Objects.requireNonNull(RaceManager.getRace(p.getUniqueId())).leavePlayer(p.getUniqueId());
-                    p.sendMessage(Main.PREFIX + "You have left the race");
+                    Race race = RaceManager.getRace(p.getUniqueId());
+                    if (race != null) {
+                        race.leavePlayer(p.getUniqueId());
+                        p.sendMessage(Main.PREFIX + "You have left the race");
+                    }
                 }).register();
 
         //INFO
@@ -313,6 +316,15 @@ public class Commands {
                         if (racePlayer.isOwner()) {
                             str.append(ChatColor.GREEN).append(" [Owner]");
                         }
+
+                        if(racePlayer.isInfected()){
+                            str.append(ChatColor.GREEN).append(" [Infected]");
+                        }
+
+                        if(racePlayer.isSkeleton()){
+                            str.append(ChatColor.WHITE).append(" [Skeleton]");
+                        }
+
                         p.sendMessage(str.toString());
                     }
                     p.sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + ownerName.replaceAll(".", "  ") + "                                ");
@@ -347,7 +359,8 @@ public class Commands {
                         p.sendMessage(Main.PREFIX + "You can't kick yourself");
                         return;
                     }
-                    Objects.requireNonNull(RaceManager.getRace(p.getUniqueId())).kickPlayer(toKick);
+                    Race race = RaceManager.getRace(p.getUniqueId());
+                    race.kickPlayer(toKick);
                 }).register();
 
         //Option visibility

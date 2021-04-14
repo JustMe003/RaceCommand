@@ -1,6 +1,5 @@
 package io.github.hielkemaps.racecommand.abilities;
 
-import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -13,8 +12,8 @@ import java.util.UUID;
 
 public class SpeedAbility extends Ability {
 
-    public SpeedAbility(InfectedRace race, UUID uuid, int slot) {
-        super(race, uuid, 200, 100, item(), slot);
+    public SpeedAbility(UUID uuid, int slot) {
+        super(uuid, 200, 500, item(), slot);
     }
 
     private static ItemStack item() {
@@ -40,7 +39,12 @@ public class SpeedAbility extends Ability {
     }
 
     @Override
-    public void onDeactivate() {
+    void onAdd() {
+
+    }
+
+    @Override
+    public void onRemove() {
 
     }
 }

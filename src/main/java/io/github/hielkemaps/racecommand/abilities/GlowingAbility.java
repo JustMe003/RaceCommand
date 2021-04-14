@@ -2,7 +2,6 @@ package io.github.hielkemaps.racecommand.abilities;
 
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
-import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -15,12 +14,12 @@ import java.util.UUID;
 
 public class GlowingAbility extends Ability{
 
-    public GlowingAbility(InfectedRace race, UUID uuid, int slot) {
-        super(race, uuid, 60, 200, item(), slot);
+    public GlowingAbility(UUID uuid, int slot) {
+        super(uuid, 60, 200, item(), slot);
     }
 
     private static ItemStack item() {
-        ItemStack item = new ItemStack(Material.SPECTRAL_ARROW);
+        ItemStack item = new ItemStack(Material.BELL);
         ItemMeta itemMeta = item.getItemMeta();
         itemMeta.setDisplayName("Show villagers");
         item.setItemMeta(itemMeta);
@@ -34,6 +33,10 @@ public class GlowingAbility extends Ability{
 
     @Override
     void onActivate() {
+
+        Race race = getRace();
+        if(race == null) return;
+
         Player abilityPlayer = getPlayer();
         abilityPlayer.playSound(abilityPlayer.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.5f,2f);
 
@@ -46,6 +49,11 @@ public class GlowingAbility extends Ability{
     }
 
     @Override
-    void onDeactivate() {
+    void onAdd() {
+
+    }
+
+    @Override
+    void onRemove() {
     }
 }

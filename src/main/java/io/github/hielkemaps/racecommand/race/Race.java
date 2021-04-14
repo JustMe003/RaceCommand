@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class Race {
 
+    private final UUID id = UUID.randomUUID();
     private final String name;
     protected final UUID owner;
     protected final List<RacePlayer> players = new ArrayList<>();
@@ -116,13 +117,8 @@ public abstract class Race {
         return Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
             countDownTask.cancel();
 
-            for (RacePlayer racePlayer : players) {
+            for (RacePlayer racePlayer : getOnlinePlayers()) {
                 Player player = racePlayer.getPlayer();
-                if (player == null) {
-                    removePlayer(player.getUniqueId());
-                    continue;
-                }
-
                 player.addScoreboardTag("inRace");
                 executeStartFunction(player);
 
@@ -463,6 +459,10 @@ public abstract class Race {
 
     public String getName() {
         return name;
+    }
+
+    public UUID getId() {
+        return id;
     }
 
     /**
