@@ -109,6 +109,18 @@
         </exclusion>
       </exclusions>
     </dependency>
+      <dependency>
+          <groupId>dev.jorel.CommandAPI</groupId>
+          <artifactId>commandapi-core</artifactId>
+          <version>6.0.0</version>
+          <scope>compile</scope>
+      </dependency>
+    <dependency>
+      <groupId>net.md-5</groupId>
+      <artifactId>bungeecord-chat</artifactId>
+      <version>1.16-R0.4</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
   <properties>
     <maven.compiler.target>1.8</maven.compiler.target>
