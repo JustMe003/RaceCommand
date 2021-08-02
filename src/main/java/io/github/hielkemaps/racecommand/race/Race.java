@@ -99,7 +99,7 @@ public abstract class Race {
                 else if (seconds.get() == 3) sb.append(ChatColor.YELLOW);
                 else if (seconds.get() > 3) sb.append(ChatColor.GREEN);
 
-                sb.append(ChatColor.BOLD).append(seconds.toString());
+                sb.append(ChatColor.BOLD).append(seconds);
 
                 if (seconds.get() <= 10) {
                     player.sendTitle(" ", sb.toString(), 2, 18, 2);
@@ -280,14 +280,7 @@ public abstract class Race {
 
         PlayerWrapper pw = PlayerManager.getPlayer(uuid);
         pw.setInRace(false);
-
-        Player player = Bukkit.getPlayer(uuid);
-        if (player != null) {
-            player.removeScoreboardTag("inRace");
-        }
-
         PlayerManager.getPlayer(owner).updateRequirements();
-
     }
 
     protected void disband() {
@@ -308,8 +301,6 @@ public abstract class Race {
 
             Player player = racePlayer.getPlayer();
             if (player == null) continue; //we can do nothing with offline players
-
-            player.removeScoreboardTag("inRace");
 
             if (!racePlayer.getUniqueId().equals(owner))
                 player.sendMessage(Main.PREFIX + "The race has been disbanded");

@@ -81,13 +81,13 @@ public class EventListener implements Listener {
             }
 
             race.onPlayerJoin(e, race.getRacePlayer(uuid));
-        }else{
+        } else {
 
             //if player is NOT in race, but thinks it is, we need to change it
-            if(wPlayer.isInRace()){
-                player.removeScoreboardTag("inRace");
-                wPlayer.setInRace(false);
-            }
+            if (wPlayer.isInRace()) wPlayer.setInRace(false);
+
+            //always remove tag just to be sure
+            player.removeScoreboardTag("inRace");
         }
 
         CommandAPI.updateRequirements(player);
