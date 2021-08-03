@@ -245,7 +245,7 @@ public class EventListener implements Listener {
 
             List<Ability> abilities = player.getAbilities();
             for (Ability ability : abilities) {
-                if (e.getCurrentItem().equals(ability.getItem())) {
+                if (e.getCurrentItem() != null && e.getCurrentItem().equals(ability.getItem())) {
                     e.setCancelled(true);
                     return;
                 }
