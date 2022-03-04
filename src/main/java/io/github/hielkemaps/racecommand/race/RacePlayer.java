@@ -22,7 +22,7 @@ public class RacePlayer implements Comparable<RacePlayer> {
     private final int skinId;
 
     private boolean finished = false;
-    private int place;
+    private int place = -1;
     private int time;
 
 
@@ -142,6 +142,10 @@ public class RacePlayer implements Comparable<RacePlayer> {
             }
         }
         isSkeleton = value;
+    }
+
+    public int getPlace(){
+        return place;
     }
 
     public boolean isSkeleton() {

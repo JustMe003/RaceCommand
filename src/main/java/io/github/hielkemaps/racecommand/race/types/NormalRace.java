@@ -26,7 +26,7 @@ public class NormalRace extends Race {
     @Override
     protected void onRaceStop() {
         //show results if any, otherwise show stop message
-        if (players.stream().noneMatch(RacePlayer::isFinished)) sendMessage(Main.PREFIX + "stopped race");
+        if (players.stream().noneMatch(RacePlayer::isFinished)) sendMessage(Main.PREFIX + "Stopped race");
         else printResults();
     }
 

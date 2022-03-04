@@ -394,6 +394,8 @@ public abstract class Race {
 
     public void printResults() {
         sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           " + ChatColor.RESET + "" + ChatColor.BOLD + " Results " + ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           ");
+        players.sort(Comparator.comparing(RacePlayer::getPlace));
+
         for (RacePlayer player : players) {
             sendMessage(player.toString());
         }
