@@ -243,8 +243,7 @@ public class PlayerWrapper {
     }
 
     public void onPlayerJoin() {
-
-        if (!inRace) {
+		if (!inRace) {
             removeAbilities();
         }
 
