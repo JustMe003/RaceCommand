@@ -48,7 +48,7 @@ public class PlayerWrapper {
         inRace = value;
 
         if (!value) {
-            getPlayer().removeScoreboardTag("inrace");
+            getPlayer().removeScoreboardTag("inRace");
             resetSkin();
             removeAbilities();
             setMaxHealth(20);
