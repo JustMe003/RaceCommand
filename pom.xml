@@ -94,7 +94,7 @@
                         </goals>
 
                         <configuration>
-                            <outputDirectory>D:\Servers\network\parkour-spiral\plugins
+                            <outputDirectory>C:\Users\Hielk\Documents\GitHub\MinecraftServer\server\plugins
                             </outputDirectory>
                             <resources>
                                 <resource>
