@@ -92,11 +92,11 @@ public class Commands {
         //INVITE
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("invite").withRequirement(playerInRace.and(playerIsRaceOwner)));
-        arguments.add(new PlayerArgument("player").withRequirement(sender -> !sender.isOp()).overrideSuggestions(sender -> {
+        arguments.add(new PlayerArgument("player").withRequirement(sender -> !sender.isOp()).replaceSuggestions(info -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<String> names = new ArrayList<>();
 
-            Race race = RaceManager.getRace(((Player) sender).getUniqueId());
+            Race race = RaceManager.getRace(((Player) info.sender()).getUniqueId());
             if (race == null) return new String[0];
 
             //Don't show players that are already in your race
@@ -148,11 +148,11 @@ public class Commands {
         //INVITE ALL - OP ONLY
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("invite").withRequirement(playerInRace.and(playerIsRaceOwner)));
-        arguments.add(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS).withPermission(CommandPermission.OP).overrideSuggestions(sender -> {
+        arguments.add(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS).withPermission(CommandPermission.OP).replaceSuggestions(info -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<String> names = new ArrayList<>();
 
-            Race race = RaceManager.getRace(((Player) sender).getUniqueId());
+            Race race = RaceManager.getRace(((Player) info.sender()).getUniqueId());
             if (race == null) return new String[0];
 
             //Don't show players that are already in your race
@@ -202,7 +202,7 @@ public class Commands {
         //JOIN
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("join").withRequirement(playerHasJoinableRaces));
-        arguments.add(new StringArgument("player").overrideSuggestions((sender) -> PlayerManager.getPlayer(((Player) sender).getUniqueId()).getJoinableRaces()));
+        arguments.add(new StringArgument("player").replaceSuggestions((info) -> PlayerManager.getPlayer(((Player) info.sender()).getUniqueId()).getJoinableRaces()));
         new CommandAPICommand("race").withArguments(arguments).executesPlayer((p, args) -> {
             String playerName = (String) args[0];
             UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
@@ -333,16 +333,17 @@ public class Commands {
         //KICK
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("kick").withRequirement(playerInRace.and(playerIsRaceOwner).and(playerToKick)));
-        arguments.add(new StringArgument("player").overrideSuggestions((sender) ->
+        arguments.add(new StringArgument("player").replaceSuggestions((info) ->
         {
+            Player p = (Player) info.sender();
             List<String> names = new ArrayList<>();
-            Race race = RaceManager.getRace(((Player) sender).getUniqueId());
+            Race race = RaceManager.getRace(p.getUniqueId());
             if (race == null) return new String[0];
 
             List<RacePlayer> players = race.getPlayers();
             for (RacePlayer racePlayer : players) {
                 UUID uuid = racePlayer.getUniqueId();
-                if (uuid.equals(((Player) sender).getUniqueId())) continue;
+                if (uuid.equals(p.getUniqueId())) continue;
                 names.add(Bukkit.getOfflinePlayer(uuid).getName());
             }
 
@@ -405,11 +406,11 @@ public class Commands {
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("option").withRequirement(playerInRace.and(playerIsRaceOwner)));
         arguments.add(new LiteralArgument("firstInfected").withRequirement(playerInInfectedRace));
-        arguments.add(new PlayerArgument("player").overrideSuggestions(sender -> {
+        arguments.add(new PlayerArgument("player").replaceSuggestions(info -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<String> names = new ArrayList<>();
 
-            Race race = RaceManager.getRace(((Player) sender).getUniqueId());
+            Race race = RaceManager.getRace(((Player) info.sender()).getUniqueId());
             if (race == null) return new String[0];
 
             //Only show players that are in your race
@@ -494,7 +495,7 @@ public class Commands {
 
                     for (Player player : players) {
 
-                        // You cant join your own race
+                        // You can't join your own race
                         if (player.getUniqueId().equals(p.getUniqueId())) continue;
 
                         PlayerWrapper wPlayer = PlayerManager.getPlayer(player.getUniqueId());
