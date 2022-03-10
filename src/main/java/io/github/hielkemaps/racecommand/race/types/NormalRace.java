@@ -2,7 +2,8 @@ package io.github.hielkemaps.racecommand.race.types;
 
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.race.Race;
-import io.github.hielkemaps.racecommand.race.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.DefaultRacePlayer;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -56,8 +57,8 @@ public class NormalRace extends Race {
     }
 
     @Override
-    public void onRacePlayerJoin(RacePlayer player) {
-
+    public RacePlayer onPlayerJoin(UUID uuid) {
+        return new DefaultRacePlayer(this,uuid);
     }
 
     @Override

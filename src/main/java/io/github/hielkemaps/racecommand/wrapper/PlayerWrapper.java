@@ -26,18 +26,8 @@ public class PlayerWrapper {
     private boolean hasChangedSkin = false;
     private double maxHealth = 20;
 
-    private final List<Ability> abilities = new ArrayList<>();
-
-    private BukkitTask skeletonTimer;
-
     public PlayerWrapper(UUID uuid) {
         this.uuid = uuid;
-
-        abilities.add(new SpeedAbility(uuid, 0));
-        abilities.add(new LeapAbility(uuid, 1));
-        abilities.add(new BlindAbility(uuid, 2));
-        abilities.add(new GlowingAbility(uuid, 3));
-        abilities.add(new ArrowAbility(uuid, 4));
     }
 
     public boolean isInRace() {
@@ -50,17 +40,11 @@ public class PlayerWrapper {
         if (!value) {
             getPlayer().removeScoreboardTag("inRace");
             resetSkin();
-            removeAbilities();
             setMaxHealth(20);
             setHealth(20);
-            cancelTasks();
         }
 
         updateRequirements();
-    }
-
-    private void cancelTasks() {
-        if (skeletonTimer != null) skeletonTimer.cancel();
     }
 
     public boolean hasJoinableRace() {
@@ -190,83 +174,9 @@ public class PlayerWrapper {
         return Bukkit.getPlayer(uuid);
     }
 
-
-    public void skeletonTimer() {
-        Player infected = getPlayer();
-        infected.setHealth(2);
-        setMaxHealth(2);
-        infected.sendTitle("", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 10, 60, 10);
-        infected.playSound(infected.getLocation(), Sound.ENTITY_SKELETON_HURT, 0.5F, 1.0F);
-
-        //heal infected slowly
-        skeletonTimer = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), () -> {
-            Player player = getPlayer();
-
-            if (player != null) {
-                if (player.getHealth() < 20) {
-                    double health = player.getHealth() + 2;
-                    if (health >= 20) health = 20;
-
-                    setMaxHealth(health);
-                    player.setHealth(health);
-
-                    if (health == 20) {
-                        endSkeleton(player);
-                    } else {
-                        player.sendTitle("", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 0, 60, 10);
-                        player.playSound(player.getLocation(), Sound.ENTITY_SKELETON_HURT, 0.5F, 1.0F);
-                    }
-                } else {
-                    endSkeleton(player);
-                }
-            }
-        }, 30, 30);
-    }
-
-    private void endSkeleton(Player player) {
-        player.sendTitle(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + "GO!", "", 0, 60, 20);
-        player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_AMBIENT, 1F, 1.3F);
-        skeletonTimer.cancel();
-
-        Race race = RaceManager.getRace(uuid);
-        if (race != null) {
-            race.getRacePlayer(uuid).setSkeleton(false);
-        }
-    }
-
-    public void addAbilities() {
-        abilities.forEach(Ability::add);
-    }
-
-    public void removeAbilities() {
-        abilities.forEach(Ability::remove);
-    }
-
-    public void onPlayerJoin() {
-		if (!inRace) {
-            removeAbilities();
-        }
-
-        for (Ability ability : abilities) {
-            ability.onPlayerJoin();
-        }
-    }
-
     public void setHealth(int value) {
         if (isOnline()) {
             getPlayer().setHealth(value);
         }
-    }
-
-    public List<Ability> getAbilities() {
-        return abilities;
-    }
-
-    public void hideAbilities() {
-        abilities.forEach(Ability::hide);
-    }
-
-    public void showAbilities() {
-        abilities.forEach(Ability::show);
     }
 }

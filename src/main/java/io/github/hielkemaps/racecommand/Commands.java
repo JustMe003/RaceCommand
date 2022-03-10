@@ -7,7 +7,8 @@ import dev.jorel.commandapi.arguments.*;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.RaceMode;
-import io.github.hielkemaps.racecommand.race.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import io.github.hielkemaps.racecommand.race.types.NormalRace;
 import io.github.hielkemaps.racecommand.race.types.PvpRace;
@@ -317,13 +318,17 @@ public class Commands {
                             str.append(ChatColor.GREEN).append(" [Owner]");
                         }
 
-                        if(racePlayer.isInfected()){
-                            str.append(ChatColor.GREEN).append(" [Infected]");
+                        if(race instanceof InfectedRace){
+                            InfectedRacePlayer infectedRacePlayer = (InfectedRacePlayer) racePlayer;
+                            if(infectedRacePlayer.isInfected()){
+                                str.append(ChatColor.GREEN).append(" [Infected]");
+                            }
+
+                            if(infectedRacePlayer.isSkeleton()){
+                                str.append(ChatColor.WHITE).append(" [Skeleton]");
+                            }
                         }
 
-                        if(racePlayer.isSkeleton()){
-                            str.append(ChatColor.WHITE).append(" [Skeleton]");
-                        }
 
                         p.sendMessage(str.toString());
                     }
@@ -427,7 +432,7 @@ public class Commands {
                     Player player = (Player) args[0];
                     Race race = RaceManager.getRace(p.getUniqueId());
                     if (race instanceof InfectedRace) {
-                        RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
+                        InfectedRacePlayer racePlayer = (InfectedRacePlayer) race.getRacePlayer(player.getUniqueId());
                         if (racePlayer != null) {
                             ((InfectedRace) race).setFirstInfected(racePlayer);
                             p.sendMessage(Main.PREFIX + player.getName() + " will be the first infected");

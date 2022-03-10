@@ -2,10 +2,10 @@ package io.github.hielkemaps.racecommand.events;
 
 import dev.jorel.commandapi.CommandAPI;
 import io.github.hielkemaps.racecommand.Main;
-import io.github.hielkemaps.racecommand.abilities.Ability;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
-import io.github.hielkemaps.racecommand.race.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import org.bukkit.Bukkit;
@@ -24,7 +24,6 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 
-import java.util.List;
 import java.util.UUID;
 
 public class EventListener implements Listener {
@@ -64,7 +63,6 @@ public class EventListener implements Listener {
         UUID uuid = player.getUniqueId();
 
         PlayerWrapper wPlayer = PlayerManager.getPlayer(uuid);
-        wPlayer.onPlayerJoin();
 
         //Remove inRace tag if player is not in current active race
         Race race = RaceManager.getRace(uuid);
@@ -80,7 +78,9 @@ public class EventListener implements Listener {
                 player.performCommand("restart");
             }
 
-            race.onPlayerJoin(e, race.getRacePlayer(uuid));
+            RacePlayer p = race.getRacePlayer(uuid);
+            race.onPlayerJoin(e, p);
+            p.onJoin(e);
         } else {
 
             //if player is NOT in race, but thinks it is, we need to change it
@@ -153,7 +153,7 @@ public class EventListener implements Listener {
                 PlayerWrapper p = PlayerManager.getPlayer(player.getUniqueId());
                 if (p.isInInfectedRace()) {
                     Race race = RaceManager.getRace(player.getUniqueId());
-                    RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
+                    InfectedRacePlayer racePlayer = (InfectedRacePlayer) race.getRacePlayer(player.getUniqueId());
                     if (!racePlayer.isInfected()) {
 
                         for (String scoreboardTag : arrow.getScoreboardTags()) {
@@ -198,59 +198,38 @@ public class EventListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent e) {
         //on right click
         if (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR) {
-            PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
-
-            List<Ability> abilities = player.getAbilities();
-            for (Ability ability : abilities) {
-                if (ability.getItem().equals(e.getItem())) {
-                    ability.activate();
-                }
+            UUID uuid = e.getPlayer().getUniqueId();
+            Race race = RaceManager.getRace(uuid);
+            if(race != null){
+                race.getRacePlayer(uuid).onPlayerRightClick(e);
             }
         }
-
     }
 
     @EventHandler
     public void onPlayerSwitchHandItem(PlayerSwapHandItemsEvent e) {
-        PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
-
-        List<Ability> abilities = player.getAbilities();
-        for (Ability ability : abilities) {
-            if (ability.getItem().equals(e.getOffHandItem())) {
-                e.setCancelled(true);
-                return;
-            }
+        UUID uuid = e.getPlayer().getUniqueId();
+        Race race = RaceManager.getRace(uuid);
+        if(race != null){
+            race.getRacePlayer(uuid).onPlayerSwitchHandItem(e);
         }
-
     }
 
     @EventHandler
     public void onPlayerDropItem(PlayerDropItemEvent e) {
-        PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
-
-        List<Ability> abilities = player.getAbilities();
-        for (Ability ability : abilities) {
-            if (ability.getItem().equals(e.getItemDrop().getItemStack())) {
-                e.setCancelled(true);
-                return;
-            }
+        UUID uuid = e.getPlayer().getUniqueId();
+        Race race = RaceManager.getRace(uuid);
+        if(race != null){
+            race.getRacePlayer(uuid).onDropItem(e);
         }
-
     }
 
     @EventHandler
     public void onInventoryInteract(InventoryClickEvent e) {
-        if (e.getWhoClicked() instanceof Player) {
-            PlayerWrapper player = PlayerManager.getPlayer(e.getWhoClicked().getUniqueId());
-
-            List<Ability> abilities = player.getAbilities();
-            for (Ability ability : abilities) {
-                if (e.getCurrentItem() != null && e.getCurrentItem().equals(ability.getItem())) {
-                    e.setCancelled(true);
-                    return;
-                }
-            }
-
+        UUID uuid = e.getWhoClicked().getUniqueId();
+        Race race = RaceManager.getRace(uuid);
+        if(race != null){
+            race.getRacePlayer(uuid).onInventoryInteract(e);
         }
     }
 

@@ -1,38 +1,34 @@
-package io.github.hielkemaps.racecommand.race;
+package io.github.hielkemaps.racecommand.race.player;
 
 import io.github.hielkemaps.racecommand.Util;
-import io.github.hielkemaps.racecommand.race.types.InfectedRace;
+import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
-public class RacePlayer implements Comparable<RacePlayer> {
+public abstract class RacePlayer implements Comparable<RacePlayer> {
 
     private final Race race;
     private final UUID uuid;
     private final String name;
 
-    private boolean isInfected = false;
-    private boolean isSkeleton = false;
-    private final int skinId;
-
     private boolean finished = false;
     private int place = -1;
     private int time;
-
 
     public RacePlayer(Race race, UUID uuid) {
         this.race = race;
         this.uuid = uuid;
         name = Bukkit.getOfflinePlayer(uuid).getName();
-
-        //get random int from 1 to 15
-        skinId = ThreadLocalRandom.current().nextInt(1, 16);
     }
 
     public boolean isFinished() {
@@ -85,40 +81,6 @@ public class RacePlayer implements Comparable<RacePlayer> {
         return race.getOwner().equals(uuid);
     }
 
-    public boolean isInfected() {
-        return isInfected;
-    }
-
-    public void setInfected(boolean value) {
-        if (isInfected == value) return;
-
-        PlayerWrapper player = PlayerManager.getPlayer(uuid);
-        if (value) {
-
-            //Only add abilities if race has started, and player is NOT first infected (because freeze countdown handles that)
-            InfectedRace infectedRace = (InfectedRace) race;
-            if (infectedRace.hasStarted() && !infectedRace.getFirstInfected().getUniqueId().equals(uuid)) {
-                player.addAbilities();
-            }
-
-            player.changeSkin(getZombieSkin());
-            player.setMaxHealth(20);
-        } else {
-            isSkeleton = false;
-            player.removeAbilities();
-            player.changeSkin(getVillagerSkin());
-        }
-        isInfected = value;
-    }
-
-    public String getVillagerSkin() {
-        return "villager" + skinId;
-    }
-
-    public String getZombieSkin() {
-        return "villager" + skinId + "zombie";
-    }
-
     public boolean isOnline() {
         return Bukkit.getOfflinePlayer(uuid).isOnline();
     }
@@ -127,32 +89,23 @@ public class RacePlayer implements Comparable<RacePlayer> {
         return race;
     }
 
-    public void setSkeleton(boolean value) {
-        if (isSkeleton == value) return;
-
-        if (isOnline()) {
-            PlayerWrapper p = PlayerManager.getPlayer(uuid);
-            if (value) {
-                p.changeSkin("skeleton");
-                p.hideAbilities();
-                p.skeletonTimer();
-            } else if (isInfected) {
-                p.changeSkin(getZombieSkin());
-                p.showAbilities();
-            }
-        }
-        isSkeleton = value;
-    }
-
     public int getPlace(){
         return place;
-    }
-
-    public boolean isSkeleton() {
-        return isSkeleton;
     }
 
     public PlayerWrapper getWrapper() {
         return PlayerManager.getPlayer(uuid);
     }
+
+    public abstract void onLeaveRace();
+
+    public abstract void onDropItem(PlayerDropItemEvent e);
+
+    public abstract void onPlayerSwitchHandItem(PlayerSwapHandItemsEvent e);
+
+    public abstract void onInventoryInteract(InventoryClickEvent e);
+
+    public abstract void onPlayerRightClick(PlayerInteractEvent e);
+
+    public abstract void onJoin(PlayerJoinEvent e);
 }

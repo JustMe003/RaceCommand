@@ -1,7 +1,8 @@
 package io.github.hielkemaps.racecommand.abilities;
 
 import io.github.hielkemaps.racecommand.race.Race;
-import io.github.hielkemaps.racecommand.race.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -48,7 +49,8 @@ public class BlindAbility extends Ability {
         if(race == null) return;
 
         //make villagers glow for 3 sec
-        for (RacePlayer player : race.getPlayers()) {
+        for (RacePlayer p : race.getPlayers()) {
+            InfectedRacePlayer player = (InfectedRacePlayer) p;
             if (!player.isInfected()) {
 
                 Player mcPlayer = player.getPlayer();

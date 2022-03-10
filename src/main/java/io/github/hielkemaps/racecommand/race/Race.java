@@ -3,16 +3,15 @@ package io.github.hielkemaps.racecommand.race;
 import dev.jorel.commandapi.CommandAPI;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
+import io.github.hielkemaps.racecommand.race.player.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -48,9 +47,7 @@ public abstract class Race {
         this.owner = owner;
         this.name = name;
 
-        RacePlayer racePlayer = new RacePlayer(this, owner);
-        players.add(racePlayer);
-        onRacePlayerJoin(racePlayer);
+        players.add(onPlayerJoin(owner));
 
         PlayerWrapper pw = PlayerManager.getPlayer(owner);
         pw.setInRace(true);
@@ -238,8 +235,6 @@ public abstract class Race {
         if (addedPlayer == null) return;
 
         sendMessageToRaceMembers(Main.PREFIX + ChatColor.GREEN + "+ " + ChatColor.RESET + ChatColor.GRAY + addedPlayer.getName());
-        RacePlayer newPlayer = new RacePlayer(this, uuid);
-        players.add(newPlayer);
 
         PlayerWrapper pw = PlayerManager.getPlayer(uuid);
         pw.setInRace(true);
@@ -250,7 +245,7 @@ public abstract class Race {
         }
 
         PlayerManager.getPlayer(owner).updateRequirements();
-        onRacePlayerJoin(newPlayer);
+        players.add(onPlayerJoin(uuid));
     }
 
     public boolean hasPlayer(UUID uuid) {
@@ -273,6 +268,7 @@ public abstract class Race {
     private void removePlayer(UUID uuid) {
         RacePlayer racePlayer = getRacePlayer(uuid);
         onPlayerLeave(racePlayer);
+        racePlayer.onLeaveRace();
 
         players.remove(racePlayer);
 
@@ -540,7 +536,7 @@ public abstract class Race {
 
     public abstract void onPlayerJoin(PlayerJoinEvent e, RacePlayer racePlayer);
 
-    public abstract void onRacePlayerJoin(RacePlayer player);
+    public abstract RacePlayer onPlayerJoin(UUID player);
 
     public abstract void onPlayerMove(PlayerMoveEvent e, RacePlayer racePlayer);
 

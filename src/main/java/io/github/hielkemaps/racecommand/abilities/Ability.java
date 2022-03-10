@@ -3,7 +3,9 @@ package io.github.hielkemaps.racecommand.abilities;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
-import io.github.hielkemaps.racecommand.race.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.RacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
+import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -69,14 +71,15 @@ public abstract class Ability {
 
     private int getInfectedPlayerCount() {
         int count = 0;
-        for (RacePlayer player : getRace().getPlayers()) {
+        for (RacePlayer p : getRace().getPlayers()) {
+            InfectedRacePlayer player = (InfectedRacePlayer) p;
             if (player.isInfected()) count++;
         }
         return count;
     }
 
-    public Race getRace() {
-        return RaceManager.getRace(uuid);
+    public InfectedRace getRace() {
+        return (InfectedRace) RaceManager.getRace(uuid);
     }
 
     public void deActivate() {
@@ -139,7 +142,6 @@ public abstract class Ability {
             updateInventory(item);
         }
     }
-
 
     public void onPlayerJoin() {
         queuedItems.forEach((integer, itemStack) -> getPlayer().getInventory().setItem(integer, itemStack));
