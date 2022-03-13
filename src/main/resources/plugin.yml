@@ -1,6 +1,6 @@
 name: RaceCommand
 main: io.github.hielkemaps.racecommand.Main
-version: 1.0.3
+version: 1.0.4
 authors: [Hielke, Jessuh]
 api-version: 1.16
 depend: [CommandAPI]

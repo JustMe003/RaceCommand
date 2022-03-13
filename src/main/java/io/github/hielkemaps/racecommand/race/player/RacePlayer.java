@@ -22,7 +22,7 @@ public abstract class RacePlayer implements Comparable<RacePlayer> {
     private final String name;
 
     private boolean finished = false;
-    private int place = -1;
+    private int place = Integer.MAX_VALUE;
     private int time;
 
     public RacePlayer(Race race, UUID uuid) {
@@ -62,14 +62,24 @@ public abstract class RacePlayer implements Comparable<RacePlayer> {
     public String toString() {
         StringBuilder s = new StringBuilder();
 
-        if (place == 1) s.append(ChatColor.GOLD);
-        else if (place == 2) s.append(ChatColor.GRAY);
-        else if (place == 3) s.append(ChatColor.of("#a46628"));
-        else s.append(ChatColor.DARK_GRAY);
+        if (place == 1)
+            s.append(ChatColor.GOLD);
+        else if (place == 2)
+            s.append(ChatColor.GRAY);
+        else if (place == 3)
+            s.append(ChatColor.of("#a46628"));
+        else
+            s.append(ChatColor.DARK_GRAY);
 
         s.append(ChatColor.BOLD);
 
-        s.append(Util.ordinal(place)).append(": ").append(ChatColor.RESET).append(name).append(ChatColor.DARK_GRAY).append(" - ").append(ChatColor.GRAY).append(Util.getTimeString(time));
+        if (finished) {
+            s.append(Util.ordinal(place)).append(": ").append(ChatColor.RESET).append(name).append(ChatColor.DARK_GRAY)
+                    .append(" - ").append(ChatColor.GRAY).append(Util.getTimeString(time));
+        } else {
+            s.append(ChatColor.RESET).append(name).append(ChatColor.DARK_GRAY).append(" - ").append(ChatColor.GRAY)
+                    .append("DNF");
+        }
         return s.toString();
     }
 
@@ -89,7 +99,25 @@ public abstract class RacePlayer implements Comparable<RacePlayer> {
         return race;
     }
 
-    public int getPlace(){
+    public void setSkeleton(boolean value) {
+        if (isSkeleton == value)
+            return;
+
+        if (isOnline()) {
+            PlayerWrapper p = PlayerManager.getPlayer(uuid);
+            if (value) {
+                p.changeSkin("skeleton");
+                p.hideAbilities();
+                p.skeletonTimer();
+            } else if (isInfected) {
+                p.changeSkin(getZombieSkin());
+                p.showAbilities();
+            }
+        }
+        isSkeleton = value;
+    }
+
+    public int getPlace() {
         return place;
     }
 
