@@ -20,6 +20,8 @@ public class Util {
     }
 
     public static String ordinal(int i) {
+        if(i == -1) return "";
+
         String[] suffixes = new String[]{"th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"};
         switch (i % 100) {
             case 11:

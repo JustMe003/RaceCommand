@@ -22,7 +22,7 @@ public class RacePlayer implements Comparable<RacePlayer> {
     private final int skinId;
 
     private boolean finished = false;
-    private int place = -1;
+    private int place = Integer.MAX_VALUE;
     private int time;
 
 
@@ -73,7 +73,11 @@ public class RacePlayer implements Comparable<RacePlayer> {
 
         s.append(ChatColor.BOLD);
 
-        s.append(Util.ordinal(place)).append(": ").append(ChatColor.RESET).append(name).append(ChatColor.DARK_GRAY).append(" - ").append(ChatColor.GRAY).append(Util.getTimeString(time));
+        if (finished) {
+            s.append(Util.ordinal(place)).append(": ").append(ChatColor.RESET).append(name).append(ChatColor.DARK_GRAY).append(" - ").append(ChatColor.GRAY).append(Util.getTimeString(time));
+        } else {
+            s.append(ChatColor.RESET).append(name).append(ChatColor.DARK_GRAY).append(" - ").append(ChatColor.GRAY).append("DNF");
+        }
         return s.toString();
     }
 
@@ -144,7 +148,7 @@ public class RacePlayer implements Comparable<RacePlayer> {
         isSkeleton = value;
     }
 
-    public int getPlace(){
+    public int getPlace() {
         return place;
     }
 
