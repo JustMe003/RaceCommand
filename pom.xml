@@ -94,7 +94,7 @@
                         </goals>
 
                         <configuration>
-                            <outputDirectory>C:\Users\Hielk\Documents\GitHub\MinecraftServer\server\plugins
+                            <outputDirectory>C:\Users\Jesse\Desktop\Minecraft Servers\MinecraftServer\server\plugins
                             </outputDirectory>
                             <resources>
                                 <resource>
