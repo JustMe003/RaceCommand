@@ -99,24 +99,6 @@ public abstract class RacePlayer implements Comparable<RacePlayer> {
         return race;
     }
 
-    public void setSkeleton(boolean value) {
-        if (isSkeleton == value)
-            return;
-
-        if (isOnline()) {
-            PlayerWrapper p = PlayerManager.getPlayer(uuid);
-            if (value) {
-                p.changeSkin("skeleton");
-                p.hideAbilities();
-                p.skeletonTimer();
-            } else if (isInfected) {
-                p.changeSkin(getZombieSkin());
-                p.showAbilities();
-            }
-        }
-        isSkeleton = value;
-    }
-
     public int getPlace() {
         return place;
     }
