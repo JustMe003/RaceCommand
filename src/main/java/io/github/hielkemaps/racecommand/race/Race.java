@@ -4,7 +4,6 @@ import dev.jorel.commandapi.CommandAPI;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
 import io.github.hielkemaps.racecommand.race.player.RacePlayer;
-import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import org.bukkit.*;
@@ -61,6 +60,8 @@ public abstract class Race {
 
         //Tp players to start
         for (RacePlayer racePlayer : players) {
+            racePlayer.reset();
+
             Player player = racePlayer.getPlayer();
             if (player != null) {
                 player.performCommand("restart");

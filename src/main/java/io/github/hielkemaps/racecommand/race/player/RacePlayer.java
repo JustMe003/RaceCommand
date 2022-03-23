@@ -118,4 +118,9 @@ public abstract class RacePlayer implements Comparable<RacePlayer> {
     public abstract void onPlayerRightClick(PlayerInteractEvent e);
 
     public abstract void onJoin(PlayerJoinEvent e);
+
+    public void reset() {
+        finished = false;
+        place = Integer.MAX_VALUE;
+    }
 }
