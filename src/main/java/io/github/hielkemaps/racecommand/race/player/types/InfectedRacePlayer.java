@@ -4,7 +4,6 @@ import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.abilities.*;
 import io.github.hielkemaps.racecommand.race.player.RacePlayer;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
-import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -79,7 +78,7 @@ public class InfectedRacePlayer extends RacePlayer {
         PlayerWrapper p = getWrapper();
         infected.setHealth(2);
         p.setMaxHealth(2);
-        infected.sendTitle("", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 10, 60, 10);
+        infected.sendTitle(" ", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 10, 60, 10);
         infected.playSound(infected.getLocation(), Sound.ENTITY_SKELETON_HURT, 0.5F, 1.0F);
 
         //heal infected slowly
@@ -97,7 +96,7 @@ public class InfectedRacePlayer extends RacePlayer {
                     if (health == 20) {
                         endSkeleton();
                     } else {
-                        player.sendTitle("", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 0, 60, 10);
+                        player.sendTitle(" ", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 0, 60, 10);
                         player.playSound(player.getLocation(), Sound.ENTITY_SKELETON_HURT, 0.5F, 1.0F);
                     }
                 } else {
