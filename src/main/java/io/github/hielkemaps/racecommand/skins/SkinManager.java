@@ -54,21 +54,23 @@ public final class SkinManager {
 
     public static void changeSkin(Player player, String skin) {
         player.sendMessage("changing skin to " + skin);
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "forward console skin set " + player.getName() + " " + skin);
 
-        SkinsRestorerAPI api = SkinsRestorerAPI.getApi();
-        PlayerWrapper wrapper = new PlayerWrapper(player);
-
-        //if it's a skin we have stored (zombie/villagers)
-        if(storedSkins.containsKey(skin)){
-            IProperty property = storedSkins.get(skin);
-            api.setSkinData(skin, new GenericProperty("textures", property.getValue(), property.getSignature()), null);
-        }
-
-        try {
-            api.setSkin(player.getName(), skin);
-            api.applySkin(wrapper, skin);
-        } catch (SkinRequestException e) {
-            e.printStackTrace();
-        }
+//   Doesn't work because SkinsRestorer will store the .skin and .player files locally
+//        SkinsRestorerAPI api = SkinsRestorerAPI.getApi();
+//        PlayerWrapper wrapper = new PlayerWrapper(player);
+//
+//        //if it's a skin we have stored (zombie/villagers)
+//        if(storedSkins.containsKey(skin)){
+//            IProperty property = storedSkins.get(skin);
+//            api.setSkinData(skin, new GenericProperty("textures", property.getValue(), property.getSignature()), null);
+//        }
+//
+//        try {
+//            api.setSkin(player.getName(), skin);
+//            api.applySkin(wrapper, skin);
+//        } catch (SkinRequestException e) {
+//            e.printStackTrace();
+//        }
     }
 }
