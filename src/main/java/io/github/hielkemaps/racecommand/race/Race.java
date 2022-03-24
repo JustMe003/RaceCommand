@@ -532,6 +532,8 @@ public abstract class Race {
 
     public abstract void onPlayerDamagedByPlayer(EntityDamageByEntityEvent e, RacePlayer target, RacePlayer attacker);
 
+    public abstract void onPlayerDamagedByEntity(EntityDamageByEntityEvent e, RacePlayer player);
+
     public abstract void onPlayerQuit(PlayerQuitEvent e, RacePlayer racePlayer);
 
     public abstract void onPlayerHeal(EntityRegainHealthEvent e, RacePlayer racePlayer);

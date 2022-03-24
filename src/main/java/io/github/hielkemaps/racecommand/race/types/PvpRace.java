@@ -42,6 +42,11 @@ public class PvpRace extends Race {
     }
 
     @Override
+    public void onPlayerDamagedByEntity(EntityDamageByEntityEvent e, RacePlayer player) {
+
+    }
+
+    @Override
     public void onPlayerQuit(PlayerQuitEvent e, RacePlayer racePlayer) {
     }
 

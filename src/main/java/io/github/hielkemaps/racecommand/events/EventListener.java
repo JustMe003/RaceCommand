@@ -150,31 +150,11 @@ public class EventListener implements Listener {
             e.setCancelled(true); //disable pvp
         }
 
-        //Arrow detection
-        if (e.getEntity() instanceof Player && e.getDamager() instanceof Arrow) {
-            Arrow arrow = (Arrow) e.getDamager();
-
-            if (arrow.getScoreboardTags().contains("raceplugin")) {
-
-                Player player = (Player) e.getEntity();
-                PlayerWrapper p = PlayerManager.getPlayer(player.getUniqueId());
-                if (p.isInInfectedRace()) {
-                    Race race = RaceManager.getRace(player.getUniqueId());
-                    InfectedRacePlayer racePlayer = (InfectedRacePlayer) race.getRacePlayer(player.getUniqueId());
-                    if (!racePlayer.isInfected()) {
-                        for (String scoreboardTag : arrow.getScoreboardTags()) {
-                            if (scoreboardTag.startsWith("race_")) {
-                                String id = scoreboardTag.substring(5);
-                                if (id.equals(race.getId().toString())) {
-                                    e.setCancelled(false); //allow damage
-                                    player.sendMessage("Damage me pls");
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-                e.setCancelled(true);
+        if(e.getEntity() instanceof Player && !(e.getDamager() instanceof Player)){
+            UUID player = e.getEntity().getUniqueId();
+            Race playerRace = RaceManager.getRace(player);
+            if (playerRace != null) {
+                playerRace.onPlayerDamagedByEntity(e,playerRace.getRacePlayer(player));
             }
         }
     }

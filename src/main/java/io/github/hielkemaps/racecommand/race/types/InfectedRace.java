@@ -3,10 +3,14 @@ package io.github.hielkemaps.racecommand.race.types;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
 import io.github.hielkemaps.racecommand.race.Race;
+import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.player.RacePlayer;
 import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
+import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import org.bukkit.*;
+import org.bukkit.entity.Arrow;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -239,6 +243,39 @@ public class InfectedRace extends Race {
             }
         } else {
             e.setCancelled(true);
+        }
+    }
+
+    @Override
+    public void onPlayerDamagedByEntity(EntityDamageByEntityEvent e, RacePlayer p) {
+        InfectedRacePlayer player = (InfectedRacePlayer) p;
+
+        //Arrow detection
+        if (e.getDamager() instanceof Arrow) {
+            Arrow arrow = (Arrow) e.getDamager();
+
+            if (arrow.getScoreboardTags().contains("raceplugin")) {
+                    Race race = RaceManager.getRace(player.getUniqueId());
+
+                    if (!player.isInfected()) {
+                        for (String scoreboardTag : arrow.getScoreboardTags()) {
+                            if (scoreboardTag.startsWith("race_")) {
+                                String id = scoreboardTag.substring(5);
+                                if (id.equals(race.getId().toString())) {
+                                    e.setCancelled(false); //allow damage
+                                    e.setDamage(1);
+
+                                    Bukkit.getScheduler().runTaskLaterAsynchronously(Main.getInstance(), ()->{
+                                        ((LivingEntity) e.getEntity()).setNoDamageTicks(0); // after 100ms set the no damage ticks to 0 so arrows can hurt again
+                                    }, 2L);
+
+                                    return;
+                                }
+                            }
+                    }
+                }
+                e.setCancelled(true);
+            }
         }
     }
 
