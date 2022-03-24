@@ -280,7 +280,7 @@ public abstract class Race {
         PlayerManager.getPlayer(owner).updateRequirements();
     }
 
-    protected void disband() {
+    public void disband() {
         cancelTasks();
 
         //get race off public visibility
@@ -293,6 +293,7 @@ public abstract class Race {
         });
 
         for (RacePlayer racePlayer : players) {
+            racePlayer.onLeaveRace();
             PlayerWrapper pw = PlayerManager.getPlayer(racePlayer.getUniqueId());
             pw.setInRace(false);
 

@@ -1,6 +1,8 @@
 package io.github.hielkemaps.racecommand;
 
 import io.github.hielkemaps.racecommand.events.EventListener;
+import io.github.hielkemaps.racecommand.race.RaceManager;
+import io.github.hielkemaps.racecommand.skins.SkinManager;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -24,6 +26,7 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        SkinManager.init();
 
         saveDefaultConfig();
         FileConfiguration config = getConfig();
@@ -34,5 +37,13 @@ public class Main extends JavaPlugin {
 
         //Register EventListener
         getServer().getPluginManager().registerEvents(new EventListener(),this);
+    }
+
+
+    @Override
+    public void onDisable(){
+        RaceManager.getRaces().forEach(
+                (uuid, race) -> race.disband()
+        );
     }
 }

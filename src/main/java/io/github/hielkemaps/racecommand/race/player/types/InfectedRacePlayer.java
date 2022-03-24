@@ -36,7 +36,7 @@ public class InfectedRacePlayer extends RacePlayer {
         //get random int from 1 to 15
         skinId = ThreadLocalRandom.current().nextInt(1, 16);
 
-        PlayerManager.getPlayer(uuid).changeSkin(getVillagerSkin());
+        getWrapper().changeSkin(getVillagerSkin());
 
         abilities.add(new SpeedAbility(uuid, 0));
         abilities.add(new LeapAbility(uuid, 1));

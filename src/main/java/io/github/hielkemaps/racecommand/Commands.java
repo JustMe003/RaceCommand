@@ -12,6 +12,7 @@ import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import io.github.hielkemaps.racecommand.race.types.NormalRace;
 import io.github.hielkemaps.racecommand.race.types.PvpRace;
+import io.github.hielkemaps.racecommand.skins.SkinManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -552,6 +553,17 @@ public class Commands {
 
                         player.sendMessage(Main.PREFIX + "You joined " + p.getName() + "'s race!");
                     }
+                }).register();
+
+        //TEST
+        arguments = new ArrayList<>();
+        arguments.add(new LiteralArgument("setskin"));
+        arguments.add(new StringArgument("name"));
+        new CommandAPICommand("race")
+                .withArguments(arguments)
+                .executesPlayer((p, args) -> {
+                    SkinManager.changeSkin(p, (String) args[0]);
+                    p.sendMessage(Main.PREFIX + "Set skin to " + args[0]);
                 }).register();
     }
 

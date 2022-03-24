@@ -90,6 +90,13 @@ public class EventListener implements Listener {
             player.removeScoreboardTag("inRace");
         }
 
+        Bukkit.getLogger().info("Player in race: " + wPlayer.isInRace());
+
+        //if not in race but changed skin, we need to reset it
+        if(!wPlayer.isInRace()){
+            wPlayer.resetSkin();
+        }
+
         CommandAPI.updateRequirements(player);
     }
 
@@ -155,12 +162,12 @@ public class EventListener implements Listener {
                     Race race = RaceManager.getRace(player.getUniqueId());
                     InfectedRacePlayer racePlayer = (InfectedRacePlayer) race.getRacePlayer(player.getUniqueId());
                     if (!racePlayer.isInfected()) {
-
                         for (String scoreboardTag : arrow.getScoreboardTags()) {
                             if (scoreboardTag.startsWith("race_")) {
                                 String id = scoreboardTag.substring(5);
                                 if (id.equals(race.getId().toString())) {
                                     e.setCancelled(false); //allow damage
+                                    player.sendMessage("Damage me pls");
                                     return;
                                 }
                             }

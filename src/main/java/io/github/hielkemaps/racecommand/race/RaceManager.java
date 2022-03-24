@@ -44,4 +44,8 @@ public class RaceManager {
         }
         return false;
     }
+
+    public static HashMap<UUID, Race> getRaces() {
+        return races;
+    }
 }

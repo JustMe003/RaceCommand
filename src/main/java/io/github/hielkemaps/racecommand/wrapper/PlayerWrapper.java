@@ -6,6 +6,9 @@ import io.github.hielkemaps.racecommand.abilities.*;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
+import io.github.hielkemaps.racecommand.skins.SkinManager;
+import net.skinsrestorer.api.SkinsRestorerAPI;
+import net.skinsrestorer.api.exception.SkinRequestException;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
@@ -124,15 +127,11 @@ public class PlayerWrapper {
 
     public void resetSkin() {
         if (isOnline() && hasChangedSkin) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "forward console skin clear " + getPlayer().getName());
-            hasChangedSkin = false;
-        }
-    }
 
-    public void changeSkin(String name) {
-        if (isOnline()) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "forward console skin set " + getPlayer().getName() + " " + name);
-            hasChangedSkin = true;
+            SkinManager.changeSkin(getPlayer(), getPlayer().getName());
+            hasChangedSkin = false;
+
+            //Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "forward console skin clear " + getPlayer().getName());
         }
     }
 
@@ -177,6 +176,13 @@ public class PlayerWrapper {
     public void setHealth(int value) {
         if (isOnline()) {
             getPlayer().setHealth(value);
+        }
+    }
+
+    public void changeSkin(String skin) {
+        if(isOnline()){
+            SkinManager.changeSkin(getPlayer(),skin);
+            hasChangedSkin = true;
         }
     }
 }

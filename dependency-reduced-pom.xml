@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.hielkemaps</groupId>
   <artifactId>RaceCommand</artifactId>
-  <version>1.0.3</version>
+  <version>1.0.4</version>
   <build>
     <resources>
       <resource>
@@ -55,7 +55,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>D:\Servers\network\parkour-spiral\plugins</outputDirectory>
+              <outputDirectory>C:\Users\Hielk\Documents\GitHub\MinecraftServer\server\plugins</outputDirectory>
               <resources>
                 <resource>
                   <directory>/target</directory>
@@ -76,15 +76,19 @@
       <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
     </repository>
     <repository>
-      <id>mccommandapi</id>
-      <url>https://raw.githubusercontent.com/JorelAli/CommandAPI/mvn-repo/</url>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+    <repository>
+      <id>codemc-releases</id>
+      <url>https://repo.codemc.org/repository/maven-releases/</url>
     </repository>
   </repositories>
   <dependencies>
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.16.5-R0.1-SNAPSHOT</version>
+      <version>1.17.1-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -109,17 +113,29 @@
         </exclusion>
       </exclusions>
     </dependency>
-      <dependency>
-          <groupId>dev.jorel.CommandAPI</groupId>
-          <artifactId>commandapi-core</artifactId>
-          <version>6.0.0</version>
-          <scope>compile</scope>
-      </dependency>
     <dependency>
-      <groupId>net.md-5</groupId>
-      <artifactId>bungeecord-chat</artifactId>
-      <version>1.16-R0.4</version>
-      <scope>compile</scope>
+      <groupId>dev.jorel.CommandAPI</groupId>
+      <artifactId>commandapi-core</artifactId>
+      <version>6.2.0</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>adventure-api</artifactId>
+          <groupId>net.kyori</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>paper-api</artifactId>
+          <groupId>com.destroystokyo.paper</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>item-nbt-api-plugin</artifactId>
+          <groupId>de.tr7zw</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>commandapi-preprocessor</artifactId>
+          <groupId>dev.jorel.CommandAPI</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
   <properties>

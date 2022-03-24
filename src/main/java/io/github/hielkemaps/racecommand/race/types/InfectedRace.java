@@ -2,7 +2,6 @@ package io.github.hielkemaps.racecommand.race.types;
 
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
-import io.github.hielkemaps.racecommand.abilities.Ability;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.player.RacePlayer;
 import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
@@ -18,7 +17,6 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
