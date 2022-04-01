@@ -53,7 +53,7 @@ public final class SkinManager {
     }
 
     public static void changeSkin(Player player, String skin) {
-        player.sendMessage("changing skin to " + skin);
+        //player.sendMessage("changing skin to " + skin);
         //Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "forward console skin set " + player.getName() + " " + skin);
 
         SkinsRestorerAPI api = SkinsRestorerAPI.getApi();
