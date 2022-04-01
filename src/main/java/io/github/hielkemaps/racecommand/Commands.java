@@ -557,7 +557,7 @@ public class Commands {
 
         //TEST
         arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("setskin"));
+        arguments.add(new LiteralArgument("setskin").withPermission(CommandPermission.OP));
         arguments.add(new StringArgument("name"));
         new CommandAPICommand("race")
                 .withArguments(arguments)
