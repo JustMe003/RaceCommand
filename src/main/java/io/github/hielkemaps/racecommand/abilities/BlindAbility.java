@@ -35,7 +35,7 @@ public class BlindAbility extends Ability {
     @Override
     void onActiveTick() {
         for (Player p : affectedPlayers) {
-            if (p != null) {
+            if (p != null && p.isOnline()) {
                 p.getWorld().spawnParticle(Particle.SMOKE_LARGE, p.getLocation(), 5, 0.25, 0.5, 0.25, 0.001);
             }
         }
@@ -51,7 +51,7 @@ public class BlindAbility extends Ability {
         //make villagers glow for 3 sec
         for (RacePlayer p : race.getPlayers()) {
             InfectedRacePlayer player = (InfectedRacePlayer) p;
-            if (!player.isInfected()) {
+            if (!player.isInfected() && player.isOnline()) {
 
                 Player mcPlayer = player.getPlayer();
 

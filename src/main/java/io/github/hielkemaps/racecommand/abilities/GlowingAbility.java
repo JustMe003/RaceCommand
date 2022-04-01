@@ -46,7 +46,7 @@ public class GlowingAbility extends Ability{
         for(RacePlayer p : race.getPlayers()){
             InfectedRacePlayer player = (InfectedRacePlayer) p;
 
-            if(!player.isInfected()){
+            if(!player.isInfected() && player.isOnline()){
                 player.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, duration, 1, true, true, true));
             }
         }
