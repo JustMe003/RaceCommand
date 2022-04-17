@@ -10,6 +10,7 @@ import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -269,7 +270,6 @@ public abstract class Race {
     private void removePlayer(UUID uuid) {
         RacePlayer racePlayer = getRacePlayer(uuid);
         onPlayerLeave(racePlayer);
-        racePlayer.onLeaveRace();
 
         players.remove(racePlayer);
 
@@ -293,7 +293,8 @@ public abstract class Race {
         });
 
         for (RacePlayer racePlayer : players) {
-            racePlayer.onLeaveRace();
+            onPlayerLeave(racePlayer);
+
             PlayerWrapper pw = PlayerManager.getPlayer(racePlayer.getUniqueId());
             pw.setInRace(false);
 
@@ -549,4 +550,6 @@ public abstract class Race {
     public abstract void onPlayerRespawn(PlayerRespawnEvent e, RacePlayer racePlayer);
 
     protected abstract void onPlayerLeave(RacePlayer racePlayer);
+
+    public abstract void onPlayerDeath(PlayerDeathEvent e, RacePlayer racePlayer);
 }

@@ -6,6 +6,7 @@ import io.github.hielkemaps.racecommand.race.player.RacePlayer;
 import io.github.hielkemaps.racecommand.race.player.types.DefaultRacePlayer;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -68,12 +69,10 @@ public class NormalRace extends Race {
 
     @Override
     public void onPlayerMove(PlayerMoveEvent e, RacePlayer racePlayer) {
-
     }
 
     @Override
     public void onCancelTasks() {
-
     }
 
     @Override
@@ -83,6 +82,11 @@ public class NormalRace extends Race {
 
     @Override
     protected void onPlayerLeave(RacePlayer racePlayer) {
+
+    }
+
+    @Override
+    public void onPlayerDeath(PlayerDeathEvent e, RacePlayer racePlayer) {
 
     }
 }

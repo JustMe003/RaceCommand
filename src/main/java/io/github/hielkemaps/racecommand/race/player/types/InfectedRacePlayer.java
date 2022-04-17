@@ -126,7 +126,7 @@ public class InfectedRacePlayer extends RacePlayer {
 
             //Only add abilities if race has started, and player is NOT first infected (because freeze countdown handles that)
             InfectedRace race = (InfectedRace) getRace();
-            if (race.hasStarted() && !race.getFirstInfected().getUniqueId().equals(getUniqueId())) {
+            if (race.doPowerUps() && race.hasStarted() && !race.getFirstInfected().getUniqueId().equals(getUniqueId())) {
                 addAbilities();
             }
 

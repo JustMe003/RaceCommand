@@ -319,13 +319,13 @@ public class Commands {
                             str.append(ChatColor.GREEN).append(" [Owner]");
                         }
 
-                        if(race instanceof InfectedRace){
+                        if (race instanceof InfectedRace) {
                             InfectedRacePlayer infectedRacePlayer = (InfectedRacePlayer) racePlayer;
-                            if(infectedRacePlayer.isInfected()){
+                            if (infectedRacePlayer.isInfected()) {
                                 str.append(ChatColor.GREEN).append(" [Infected]");
                             }
 
-                            if(infectedRacePlayer.isSkeleton()){
+                            if (infectedRacePlayer.isSkeleton()) {
                                 str.append(ChatColor.WHITE).append(" [Skeleton]");
                             }
                         }
@@ -411,7 +411,8 @@ public class Commands {
         //Option infected player
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("option").withRequirement(playerInRace.and(playerIsRaceOwner)));
-        arguments.add(new LiteralArgument("firstInfected").withRequirement(playerInInfectedRace));
+        arguments.add(new LiteralArgument("infected").withRequirement(playerInInfectedRace));
+        arguments.add(new LiteralArgument("setFirstInfected"));
         arguments.add(new PlayerArgument("player").replaceSuggestions(info -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<String> names = new ArrayList<>();
@@ -439,6 +440,7 @@ public class Commands {
                             p.sendMessage(Main.PREFIX + player.getName() + " will be the first infected");
                         } else {
                             CommandAPI.fail("Could not find player " + player.getName() + ".");
+                            ((InfectedRace) race).setRandomFirstInfected();
                         }
                     }
                 }).register();
@@ -446,7 +448,8 @@ public class Commands {
         //Option infected player
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("option").withRequirement(playerInRace.and(playerIsRaceOwner)));
-        arguments.add(new LiteralArgument("infectedDelay").withRequirement(playerInInfectedRace));
+        arguments.add(new LiteralArgument("infected").withRequirement(playerInInfectedRace));
+        arguments.add(new LiteralArgument("startDelay"));
         arguments.add(new IntegerArgument("seconds", 5));
         new CommandAPICommand("race")
                 .withArguments(arguments)
@@ -454,8 +457,86 @@ public class Commands {
                     int delay = (Integer) args[0];
                     Race race = RaceManager.getRace(p.getUniqueId());
                     if (race instanceof InfectedRace) {
-                        ((InfectedRace) race).setInfectedDelay(delay);
-                        race.sendMessage(Main.PREFIX + "Infected delay set to " + delay + " seconds");
+                        ((InfectedRace) race).setStartDelay(delay);
+                        race.sendMessage(Main.PREFIX + "Start delay set to " + delay + " seconds");
+                    }
+                }).register();
+
+        //Option villager respawn
+        arguments = new ArrayList<>();
+        arguments.add(new LiteralArgument("option").withRequirement(playerInRace.and(playerIsRaceOwner)));
+        arguments.add(new LiteralArgument("infected").withRequirement(playerInInfectedRace));
+        arguments.add(new LiteralArgument("villagerRespawn"));
+        arguments.add(new BooleanArgument("value"));
+        new CommandAPICommand("race")
+                .withArguments(arguments)
+                .executesPlayer((p, args) -> {
+                    boolean value = (Boolean) args[0];
+
+                    Race race = RaceManager.getRace(p.getUniqueId());
+                    if (race instanceof InfectedRace) {
+                        InfectedRace iRace = (InfectedRace) race;
+
+                        if (iRace.setVillagerRespawn(value)) {
+                            if (value)
+                                race.sendMessage(Main.PREFIX + "Enabled villager respawn");
+                            else
+                                race.sendMessage(Main.PREFIX + "Disabled villager respawn. Death will infect villagers");
+                        } else {
+                            p.sendMessage(Main.PREFIX + ChatColor.RED + "Nothing changed. Villager respawn was already set to " + value);
+                        }
+                    }
+                }).register();
+
+        //Option villager respawn
+        arguments = new ArrayList<>();
+        arguments.add(new LiteralArgument("option").withRequirement(playerInRace.and(playerIsRaceOwner)));
+        arguments.add(new LiteralArgument("infected").withRequirement(playerInInfectedRace));
+        arguments.add(new LiteralArgument("oneHit"));
+        arguments.add(new BooleanArgument("value"));
+        new CommandAPICommand("race")
+                .withArguments(arguments)
+                .executesPlayer((p, args) -> {
+                    boolean value = (Boolean) args[0];
+
+                    Race race = RaceManager.getRace(p.getUniqueId());
+                    if (race instanceof InfectedRace) {
+                        InfectedRace iRace = (InfectedRace) race;
+
+                        if (iRace.setOneHit(value)) {
+                            if (value)
+                                race.sendMessage(Main.PREFIX + "One hit enabled. Zombies now infect villagers in one hit");
+                            else
+                                race.sendMessage(Main.PREFIX + "One hit disabled. Villagers now require multiple hits to infect");
+                        } else {
+                            p.sendMessage(Main.PREFIX + ChatColor.RED + "Nothing changed. One hit was already set to " + value);
+                        }
+                    }
+                }).register();
+
+        //Option powerups
+        arguments = new ArrayList<>();
+        arguments.add(new LiteralArgument("option").withRequirement(playerInRace.and(playerIsRaceOwner)));
+        arguments.add(new LiteralArgument("infected").withRequirement(playerInInfectedRace));
+        arguments.add(new LiteralArgument("powerups"));
+        arguments.add(new BooleanArgument("value"));
+        new CommandAPICommand("race")
+                .withArguments(arguments)
+                .executesPlayer((p, args) -> {
+                    boolean value = (Boolean) args[0];
+
+                    Race race = RaceManager.getRace(p.getUniqueId());
+                    if (race instanceof InfectedRace) {
+                        InfectedRace iRace = (InfectedRace) race;
+
+                        if (iRace.setDoPowerUps(value)) {
+                            if (value)
+                                race.sendMessage(Main.PREFIX + "Enabled powerups");
+                            else
+                                race.sendMessage(Main.PREFIX + "Disabled powerups");
+                        } else {
+                            p.sendMessage(Main.PREFIX + ChatColor.RED + "Nothing changed. Powerups were already set to " + value);
+                        }
                     }
                 }).register();
 

@@ -20,6 +20,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
@@ -120,6 +121,19 @@ public class EventListener implements Listener {
             }
 
             race.onPlayerQuit(e, race.getRacePlayer(e.getPlayer().getUniqueId()));
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent e){
+        Player player = e.getEntity();
+
+        Race race = RaceManager.getRace(player.getUniqueId());
+        if (race != null) {
+            if (race.hasStarted()) {
+                RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
+                race.onPlayerDeath(e, racePlayer);
+            }
         }
     }
 
