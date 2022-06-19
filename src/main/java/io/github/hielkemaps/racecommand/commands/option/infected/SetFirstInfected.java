@@ -3,6 +3,7 @@ package io.github.hielkemaps.racecommand.commands.option.infected;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.Argument;
+import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.LiteralArgument;
 import dev.jorel.commandapi.arguments.PlayerArgument;
 import io.github.hielkemaps.racecommand.Main;
@@ -21,21 +22,22 @@ public class SetFirstInfected {
     public static void register(List<Argument<?>> arguments) {
 
         arguments.add(new LiteralArgument("setFirstInfected"));
-        arguments.add(new PlayerArgument("player").replaceSuggestions(info -> {
-            Collection<? extends Player> players = Bukkit.getOnlinePlayers();
-            List<String> names = new ArrayList<>();
+        arguments.add(new PlayerArgument("player")
+                .replaceSuggestions(ArgumentSuggestions.strings(info -> {
+                    Collection<? extends Player> players = Bukkit.getOnlinePlayers();
+                    List<String> names = new ArrayList<>();
 
-            Race race = RaceManager.getRace(((Player) info.sender()).getUniqueId());
-            if (race == null) return new String[0];
+                    Race race = RaceManager.getRace(((Player) info.sender()).getUniqueId());
+                    if (race == null) return new String[0];
 
-            //Only show players that are in your race
-            for (Player p : players) {
-                if (race.hasPlayer(p.getUniqueId())) {
-                    names.add(p.getName());
-                }
-            }
-            return names.toArray(new String[0]);
-        }));
+                    //Only show players that are in your race
+                    for (Player p : players) {
+                        if (race.hasPlayer(p.getUniqueId())) {
+                            names.add(p.getName());
+                        }
+                    }
+                    return names.toArray(new String[0]);
+                })));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {

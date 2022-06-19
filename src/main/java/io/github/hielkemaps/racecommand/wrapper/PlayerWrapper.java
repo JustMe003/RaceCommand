@@ -4,6 +4,7 @@ import dev.jorel.commandapi.CommandAPI;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
+import io.github.hielkemaps.racecommand.skins.SkinAPI;
 import io.github.hielkemaps.racecommand.skins.SkinManager;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
@@ -122,8 +123,10 @@ public class PlayerWrapper {
     public void resetSkin() {
         if (isOnline() && hasChangedSkin) {
 
-            SkinManager.changeSkin(getPlayer(), getPlayer().getName());
-            hasChangedSkin = false;
+
+            if(SkinManager.changeSkin(getPlayer(), getPlayer().getName())){
+                hasChangedSkin = false;
+            }
 
             //Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "forward console skin clear " + getPlayer().getName());
         }
@@ -175,8 +178,10 @@ public class PlayerWrapper {
 
     public void changeSkin(String skin) {
         if(isOnline()){
-            SkinManager.changeSkin(getPlayer(),skin);
-            hasChangedSkin = true;
+
+            if(SkinManager.changeSkin(getPlayer(),skin)){
+                hasChangedSkin = true;
+            }
         }
     }
 }

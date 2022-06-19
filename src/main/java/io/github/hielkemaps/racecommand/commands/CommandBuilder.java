@@ -6,7 +6,6 @@ import dev.jorel.commandapi.arguments.Argument;
 import dev.jorel.commandapi.arguments.LiteralArgument;
 import dev.jorel.commandapi.arguments.StringArgument;
 import io.github.hielkemaps.racecommand.Main;
-import io.github.hielkemaps.racecommand.commands.option.ForceJoin;
 import io.github.hielkemaps.racecommand.skins.SkinManager;
 
 import java.util.ArrayList;
@@ -37,6 +36,11 @@ public  class CommandBuilder {
         arguments.clear();
         arguments.add(new LiteralArgument("invite").withRequirement(playerInRace.and(playerIsRaceOwner)));
         Invite.register(arguments);
+
+        //INVITEOP
+        arguments.clear();
+        arguments.add(new LiteralArgument("inviteOP").withRequirement(playerInRace.and(playerIsRaceOwner)).withPermission(CommandPermission.OP));
+        InviteOP.register(arguments);
 
         //JOIN
         arguments.clear();

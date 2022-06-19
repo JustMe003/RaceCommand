@@ -1,8 +1,9 @@
-package io.github.hielkemaps.racecommand.commands.option;
+package io.github.hielkemaps.racecommand.commands;
 
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.Argument;
-import dev.jorel.commandapi.arguments.PlayerArgument;
+import dev.jorel.commandapi.arguments.EntitySelector;
+import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
@@ -18,7 +19,7 @@ public class ForceJoin {
 
     public static void register(List<Argument<?>> arguments) {
 
-        arguments.add(new PlayerArgument("players"));
+        arguments.add(new EntitySelectorArgument<Collection<Player>>("players", EntitySelector.MANY_PLAYERS));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {

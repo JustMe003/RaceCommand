@@ -3,6 +3,7 @@ package io.github.hielkemaps.racecommand;
 import io.github.hielkemaps.racecommand.commands.CommandBuilder;
 import io.github.hielkemaps.racecommand.events.EventListener;
 import io.github.hielkemaps.racecommand.race.RaceManager;
+import io.github.hielkemaps.racecommand.skins.SkinAPI;
 import io.github.hielkemaps.racecommand.skins.SkinManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -30,9 +31,10 @@ public class Main extends JavaPlugin {
     public void onEnable() {
 
         try {
-            SkinManager.init();
-        }catch(Exception ignored){
-            Bukkit.getLogger().warning("[RaceCommand] Skinsrestorer plugin not found");
+            SkinAPI.init();
+        } catch (NoClassDefFoundError ignored) {
+            SkinManager.classPresent = false;
+            Bukkit.getLogger().warning("[RaceCommand] SkinsRestorer API not found, changing skins won't work!");
         }
 
         saveDefaultConfig();
@@ -43,12 +45,12 @@ public class Main extends JavaPlugin {
         CommandBuilder.register();
 
         //Register EventListener
-        getServer().getPluginManager().registerEvents(new EventListener(),this);
+        getServer().getPluginManager().registerEvents(new EventListener(), this);
     }
 
 
     @Override
-    public void onDisable(){
+    public void onDisable() {
         RaceManager.getRaces().forEach(
                 (uuid, race) -> race.disband()
         );
