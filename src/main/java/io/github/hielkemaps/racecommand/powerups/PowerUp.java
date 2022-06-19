@@ -1,11 +1,8 @@
-package io.github.hielkemaps.racecommand.abilities;
+package io.github.hielkemaps.racecommand.powerups;
 
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
-import io.github.hielkemaps.racecommand.race.player.RacePlayer;
-import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
-import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -15,7 +12,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.HashMap;
 import java.util.UUID;
 
-public abstract class Ability {
+public abstract class PowerUp {
 
     HashMap<Integer, ItemStack> queuedItems = new HashMap<>();
 
@@ -32,7 +29,7 @@ public abstract class Ability {
     private boolean canRun = true;
     private boolean isHidden = false;
 
-    public Ability(UUID uuid, int duration, int delay, ItemStack item, int slot) {
+    public PowerUp(UUID uuid, int duration, int delay, ItemStack item, int slot) {
         this.uuid = uuid;
         this.duration = duration;
         this.delay = delay;
@@ -55,31 +52,31 @@ public abstract class Ability {
             onActivate();
             getPlayer().getInventory().clear(slot);
             canRun = false;
-            deactivateTask = Bukkit.getScheduler().runTaskLater(Main.getInstance(), this::deActivate, getDuration());
+            deactivateTask = Bukkit.getScheduler().runTaskLater(Main.getInstance(), this::deActivate, 20);
             tickTask = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), this::onActiveTick, 0, 1);
         }
     }
 
-    // more coolDown the more infected there are
-    private long getDuration() {
-        if (getRace() != null) {
-            int infectedPlayers = getInfectedPlayerCount();
-            return infectedPlayers == 1 ? duration : (long) (duration * infectedPlayers * 0.5);
-        }
-        return duration;
-    }
+//    // more coolDown the more infected there are
+//    private long getDuration() {
+//        if (getRace() != null) {
+//            int infectedPlayers = getInfectedPlayerCount();
+//            return infectedPlayers == 1 ? duration : (long) (duration * infectedPlayers * 0.5);
+//        }
+//        return duration;
+//    }
+//
+//    private int getInfectedPlayerCount() {
+//        int count = 0;
+//        for (RacePlayer p : getRace().getPlayers()) {
+//            InfectedRacePlayer player = (InfectedRacePlayer) p;
+//            if (player.isInfected()) count++;
+//        }
+//        return count;
+//    }
 
-    private int getInfectedPlayerCount() {
-        int count = 0;
-        for (RacePlayer p : getRace().getPlayers()) {
-            InfectedRacePlayer player = (InfectedRacePlayer) p;
-            if (player.isInfected()) count++;
-        }
-        return count;
-    }
-
-    public InfectedRace getRace() {
-        return (InfectedRace) RaceManager.getRace(uuid);
+    public Race getRace() {
+        return RaceManager.getRace(uuid);
     }
 
     public void deActivate() {

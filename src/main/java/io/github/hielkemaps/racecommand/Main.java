@@ -1,8 +1,10 @@
 package io.github.hielkemaps.racecommand;
 
+import io.github.hielkemaps.racecommand.commands.CommandBuilder;
 import io.github.hielkemaps.racecommand.events.EventListener;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.skins.SkinManager;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -26,14 +28,19 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        SkinManager.init();
+
+        try {
+            SkinManager.init();
+        }catch(Exception ignored){
+            Bukkit.getLogger().warning("[RaceCommand] Skinsrestorer plugin not found");
+        }
 
         saveDefaultConfig();
         FileConfiguration config = getConfig();
         startFunction = config.getString("start-function");
 
         //Register commands
-        new Commands();
+        CommandBuilder.register();
 
         //Register EventListener
         getServer().getPluginManager().registerEvents(new EventListener(),this);

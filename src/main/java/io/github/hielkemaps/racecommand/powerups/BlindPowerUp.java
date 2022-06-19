@@ -1,8 +1,9 @@
-package io.github.hielkemaps.racecommand.abilities;
+package io.github.hielkemaps.racecommand.powerups;
 
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.player.RacePlayer;
 import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -16,18 +17,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class BlindAbility extends Ability {
+public class BlindPowerUp extends PowerUp {
 
     private final List<Player> affectedPlayers = new ArrayList<>();
 
-    public BlindAbility(UUID uuid, int slot) {
+    public BlindPowerUp(UUID uuid, int slot) {
         super(uuid, 140, 500, item(), slot);
     }
 
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.INK_SAC);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Blind nearby villagers");
+        itemMeta.setDisplayName(ChatColor.RESET + "" + ChatColor.BOLD + "Blind nearby villagers");
         item.setItemMeta(itemMeta);
         return item;
     }

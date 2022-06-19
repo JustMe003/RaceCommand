@@ -30,7 +30,6 @@ public class InfectedRace extends Race {
     private int startDelay = 5;
     private boolean randomFirstInfected = true;
     private boolean villagerRespawn = false;
-    private boolean doPowerUps = false;
     private boolean oneHit = false;
 
     private BukkitTask freezeTimer = null;
@@ -94,25 +93,14 @@ public class InfectedRace extends Race {
         return true;
     }
 
-    public boolean setDoPowerUps(boolean value) {
-        if (value == doPowerUps) return false;
-        this.doPowerUps = value;
-
-        for (RacePlayer p : players) {
-            InfectedRacePlayer player = (InfectedRacePlayer) p;
-
-            if (doPowerUps && player.isInfected()) {
-                player.addAbilities();
-            } else {
-                player.removeAbilities();
-            }
-        }
-
-        return true;
+    @Override
+    public void enablePowerUps() {
+        //only give powerups to the infected
+        players.stream().map(p -> (InfectedRacePlayer) p).filter(InfectedRacePlayer::isInfected).forEach(RacePlayer::addPowerUps);
     }
 
     @Override
-    public void onCountdownFinish() {
+    public void onRaceStart() {
 
         //set first infected
         if (firstInfected == null || !firstInfected.isOnline() || randomFirstInfected) {
@@ -192,7 +180,7 @@ public class InfectedRace extends Race {
             sendMessage(Main.PREFIX + ChatColor.DARK_GREEN + player.getName() + ChatColor.RESET + ChatColor.GREEN + " has been unleashed!");
             player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1f, 1f);
 
-            if (doPowerUps) firstInfected.addAbilities();  //enable powerups
+            if (doPowerUps) firstInfected.addPowerUps();  //enable powerups
         }, 20L * startDelay);
     }
 
@@ -355,7 +343,6 @@ public class InfectedRace extends Race {
     @Override
     public void onPlayerQuit(PlayerQuitEvent e, RacePlayer p) {
         InfectedRacePlayer racePlayer = (InfectedRacePlayer) p;
-        racePlayer.removeAbilities();
 
         //Leave race if villager, otherwise you can cheat easily.
         if (hasStarted() && !racePlayer.isInfected()) {
@@ -383,7 +370,6 @@ public class InfectedRace extends Race {
 
         if (!hasStarted()) {
             wPlayer.changeSkin(player.getVillagerSkin());
-            player.removeAbilities();
 
             wPlayer.setMaxHealth(20);
         } else {
@@ -450,7 +436,6 @@ public class InfectedRace extends Race {
         if (racePlayer.equals(firstInfected)) {
             if (!hasStarted()) {
                 firstInfected = null;
-                sendMessage(Main.PREFIX + "First infected has left! Setting to random player...");
                 randomFirstInfected = true;
             }
         }

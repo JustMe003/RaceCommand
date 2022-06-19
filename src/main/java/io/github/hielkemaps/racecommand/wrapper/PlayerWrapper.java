@@ -1,20 +1,14 @@
 package io.github.hielkemaps.racecommand.wrapper;
 
 import dev.jorel.commandapi.CommandAPI;
-import io.github.hielkemaps.racecommand.Main;
-import io.github.hielkemaps.racecommand.abilities.*;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import io.github.hielkemaps.racecommand.skins.SkinManager;
-import net.skinsrestorer.api.SkinsRestorerAPI;
-import net.skinsrestorer.api.exception.SkinRequestException;
 import org.bukkit.Bukkit;
-import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;

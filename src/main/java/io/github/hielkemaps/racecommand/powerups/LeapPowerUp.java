@@ -1,5 +1,6 @@
-package io.github.hielkemaps.racecommand.abilities;
+package io.github.hielkemaps.racecommand.powerups;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -9,17 +10,18 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.UUID;
 
-public class LeapAbility extends Ability{
+public class LeapPowerUp extends PowerUp {
 
+    public float power = 1;
 
-    public LeapAbility(UUID uuid, int slot) {
-        super(uuid, 15, 1000, item(), slot);
+    public LeapPowerUp(UUID uuid, int slot) {
+        super(uuid, 15, 500, item(), slot);
     }
 
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.FEATHER);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Leap");
+        itemMeta.setDisplayName(ChatColor.RESET + "" + ChatColor.BOLD + "Leap");
         item.setItemMeta(itemMeta);
         return item;
     }
@@ -34,10 +36,11 @@ public class LeapAbility extends Ability{
 
     @Override
     public void onActivate() {
+
         Player player = getPlayer();
         if (player != null) {
             player.playSound(player.getLocation(), Sound.ENTITY_BAT_TAKEOFF, 0.5f,1f);
-            player.setVelocity(player.getEyeLocation().getDirection());
+            player.setVelocity(player.getEyeLocation().getDirection().multiply(power));
         }
     }
 

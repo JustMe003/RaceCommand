@@ -5,7 +5,6 @@ import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.player.RacePlayer;
-import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import org.bukkit.Bukkit;
@@ -68,10 +67,13 @@ public class EventListener implements Listener {
         //Remove inRace tag if player is not in current active race
         Race race = RaceManager.getRace(uuid);
         if (race != null) {
+            RacePlayer p = race.getRacePlayer(uuid);
 
             //if player rejoins in active race, we must sync times with the other players
             if (race.hasStarted()) {
                 race.syncTime(player);
+            }else{
+                p.removePowerUps();
             }
 
             //If joined during countdown, tp to start
@@ -79,7 +81,6 @@ public class EventListener implements Listener {
                 player.performCommand("restart");
             }
 
-            RacePlayer p = race.getRacePlayer(uuid);
             race.onPlayerJoin(e, p);
             p.onJoin(e);
         } else {
@@ -91,7 +92,7 @@ public class EventListener implements Listener {
             player.removeScoreboardTag("inRace");
         }
 
-        Bukkit.getLogger().info("Player in race: " + wPlayer.isInRace());
+        //Bukkit.getLogger().info("Player in race: " + wPlayer.isInRace());
 
         //if not in race but changed skin, we need to reset it
         if(!wPlayer.isInRace()){

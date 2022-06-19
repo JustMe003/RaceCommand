@@ -36,6 +36,7 @@ public abstract class Race {
     private int countDown = 5;
     private boolean broadcast = false;
     private boolean ghostPlayers = false;
+    protected boolean doPowerUps = false;
 
     //tasks
     private BukkitTask countDownTask;
@@ -125,7 +126,7 @@ public abstract class Race {
                 hasStarted = true;
             }
 
-            onCountdownFinish();
+            onRaceStart();
 
             sendMessage(Main.PREFIX + "Race has started");
         }, 20L * countDown);
@@ -206,7 +207,7 @@ public abstract class Race {
                 CommandAPI.updateRequirements(onlinePlayer);
             }
         } else {
-            //Otherwise update invited
+            //Otherwise, update invited
             for (UUID uuid : InvitedPlayers) {
                 PlayerManager.getPlayer(uuid).updateRequirements();
             }
@@ -294,6 +295,7 @@ public abstract class Race {
 
         for (RacePlayer racePlayer : players) {
             onPlayerLeave(racePlayer);
+            racePlayer.removePowerUps();
 
             PlayerWrapper pw = PlayerManager.getPlayer(racePlayer.getUniqueId());
             pw.setInRace(false);
@@ -518,11 +520,17 @@ public abstract class Race {
         sendMessage(Main.PREFIX + ChatColor.GREEN + player.getName() + " finished " + Util.ordinal(place) + " place!" + ChatColor.WHITE + " (" + Util.getTimeString(time) + ")");
     }
 
-    public void onCountdownFinish() {
-        players.stream().map(RacePlayer::getPlayer).filter(Objects::nonNull).forEach(player -> {
-            player.sendTitle(" ", ChatColor.BOLD + "GO", 2, 18, 2);
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 2);
-        });
+    public void onRaceStart() {
+        for (RacePlayer player : players) {
+
+            if(doPowerUps) player.addPowerUps();
+
+            Player racePlayerPlayer = player.getPlayer();
+            if (racePlayerPlayer != null) {
+                racePlayerPlayer.sendTitle(" ", ChatColor.BOLD + "GO", 2, 18, 2);
+                racePlayerPlayer.playSound(racePlayerPlayer.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 2);
+            }
+        }
     }
 
     protected abstract void onPlayerStart(RacePlayer racePlayer);
@@ -552,4 +560,24 @@ public abstract class Race {
     protected abstract void onPlayerLeave(RacePlayer racePlayer);
 
     public abstract void onPlayerDeath(PlayerDeathEvent e, RacePlayer racePlayer);
+
+    public boolean setDoPowerUps(boolean value) {
+        if (value == doPowerUps) return false;
+        this.doPowerUps = value;
+
+        if (value) enablePowerUps();
+        else disablePowerUps();
+
+        return true;
+    }
+
+    public void disablePowerUps() {
+        players.forEach(RacePlayer::removePowerUps);
+    }
+
+    public void enablePowerUps() {
+        if(hasStarted){
+            players.forEach(RacePlayer::addPowerUps);
+        }
+    }
 }

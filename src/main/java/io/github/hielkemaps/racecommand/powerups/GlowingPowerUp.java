@@ -1,9 +1,9 @@
-package io.github.hielkemaps.racecommand.abilities;
+package io.github.hielkemaps.racecommand.powerups;
 
-import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.player.RacePlayer;
 import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -14,16 +14,16 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.UUID;
 
-public class GlowingAbility extends Ability{
+public class GlowingPowerUp extends PowerUp {
 
-    public GlowingAbility(UUID uuid, int slot) {
+    public GlowingPowerUp(UUID uuid, int slot) {
         super(uuid, 60, 200, item(), slot);
     }
 
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.BELL);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Show villagers");
+        itemMeta.setDisplayName(ChatColor.RESET + "" + ChatColor.BOLD + "Make villagers glow");
         item.setItemMeta(itemMeta);
         return item;
     }
@@ -36,7 +36,7 @@ public class GlowingAbility extends Ability{
     @Override
     void onActivate() {
 
-        InfectedRace race = getRace();
+        InfectedRace race = (InfectedRace) getRace();
         if(race == null) return;
 
         Player abilityPlayer = getPlayer();

@@ -2,8 +2,14 @@ package io.github.hielkemaps.racecommand.race.types;
 
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.race.Race;
+import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.player.RacePlayer;
-import io.github.hielkemaps.racecommand.race.player.types.DefaultRacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.InfectedRacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.NormalRacePlayer;
+import io.github.hielkemaps.racecommand.race.player.types.PvpRacePlayer;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Arrow;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -22,7 +28,7 @@ public class PvpRace extends Race {
 
     @Override
     protected void onPlayerStart(RacePlayer racePlayer) {
-        
+
     }
 
     @Override
@@ -45,6 +51,31 @@ public class PvpRace extends Race {
     @Override
     public void onPlayerDamagedByEntity(EntityDamageByEntityEvent e, RacePlayer player) {
 
+        //Arrow detection
+        if (e.getDamager() instanceof Arrow) {
+            Arrow arrow = (Arrow) e.getDamager();
+
+            if (arrow.getScoreboardTags().contains("raceplugin")) {
+                Race race = RaceManager.getRace(player.getUniqueId());
+
+                for (String scoreboardTag : arrow.getScoreboardTags()) {
+                    if (scoreboardTag.startsWith("race_")) {
+                        String id = scoreboardTag.substring(5);
+                        if (id.equals(race.getId().toString())) {
+                            e.setCancelled(false); //allow damage
+                            e.setDamage(1);
+
+                            Bukkit.getScheduler().runTaskLaterAsynchronously(Main.getInstance(), () -> {
+                                ((LivingEntity) e.getEntity()).setNoDamageTicks(0); // after 100ms set the no damage ticks to 0 so arrows can hurt again
+                            }, 2L);
+
+                            return;
+                        }
+                    }
+                }
+                e.setCancelled(true);
+            }
+        }
     }
 
     @Override
@@ -61,7 +92,7 @@ public class PvpRace extends Race {
 
     @Override
     public RacePlayer onPlayerJoin(UUID uuid) {
-        return new DefaultRacePlayer(this,uuid);
+        return new PvpRacePlayer(this, uuid);
     }
 
     @Override

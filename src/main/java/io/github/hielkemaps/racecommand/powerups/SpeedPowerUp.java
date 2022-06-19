@@ -1,5 +1,6 @@
-package io.github.hielkemaps.racecommand.abilities;
+package io.github.hielkemaps.racecommand.powerups;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -10,16 +11,16 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.UUID;
 
-public class SpeedAbility extends Ability {
+public class SpeedPowerUp extends PowerUp {
 
-    public SpeedAbility(UUID uuid, int slot) {
+    public SpeedPowerUp(UUID uuid, int slot) {
         super(uuid, 200, 500, item(), slot);
     }
 
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.SUGAR);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Speed boost");
+        itemMeta.setDisplayName(ChatColor.RESET + "" + ChatColor.BOLD + "Speed Boost");
         item.setItemMeta(itemMeta);
         return item;
     }

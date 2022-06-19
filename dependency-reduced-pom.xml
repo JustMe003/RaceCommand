@@ -16,8 +16,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>9</source>
+          <target>9</target>
         </configuration>
       </plugin>
       <plugin>
@@ -76,10 +76,6 @@
       <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
     </repository>
     <repository>
-      <id>jitpack.io</id>
-      <url>https://jitpack.io</url>
-    </repository>
-    <repository>
       <id>codemc-releases</id>
       <url>https://repo.codemc.org/repository/maven-releases/</url>
     </repository>
@@ -88,13 +84,9 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.17.1-R0.1-SNAPSHOT</version>
+      <version>1.19-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
       <exclusions>
-        <exclusion>
-          <artifactId>commons-lang</artifactId>
-          <groupId>commons-lang</groupId>
-        </exclusion>
         <exclusion>
           <artifactId>guava</artifactId>
           <groupId>com.google.guava</groupId>
@@ -114,26 +106,14 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>dev.jorel.CommandAPI</groupId>
+      <groupId>dev.jorel</groupId>
       <artifactId>commandapi-core</artifactId>
-      <version>6.2.0</version>
+      <version>8.4.0</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <artifactId>adventure-api</artifactId>
-          <groupId>net.kyori</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>paper-api</artifactId>
-          <groupId>com.destroystokyo.paper</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>item-nbt-api-plugin</artifactId>
-          <groupId>de.tr7zw</groupId>
-        </exclusion>
-        <exclusion>
           <artifactId>commandapi-preprocessor</artifactId>
-          <groupId>dev.jorel.CommandAPI</groupId>
+          <groupId>dev.jorel</groupId>
         </exclusion>
       </exclusions>
     </dependency>

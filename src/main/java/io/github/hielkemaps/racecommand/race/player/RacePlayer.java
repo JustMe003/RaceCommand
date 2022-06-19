@@ -1,6 +1,7 @@
 package io.github.hielkemaps.racecommand.race.player;
 
 import io.github.hielkemaps.racecommand.Util;
+import io.github.hielkemaps.racecommand.powerups.*;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
@@ -12,10 +13,15 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public abstract class RacePlayer implements Comparable<RacePlayer> {
+
+    protected final List<PowerUp> powerups = new ArrayList<>();
 
     private final Race race;
     private final UUID uuid;
@@ -25,11 +31,16 @@ public abstract class RacePlayer implements Comparable<RacePlayer> {
     private int place = Integer.MAX_VALUE;
     private int time;
 
+    protected BukkitTask bukkitTask;
+
     public RacePlayer(Race race, UUID uuid) {
         this.race = race;
         this.uuid = uuid;
         name = Bukkit.getOfflinePlayer(uuid).getName();
+        registerAbilities(uuid);
     }
+
+    public abstract void registerAbilities(UUID uuid);
 
     public boolean isFinished() {
         return finished;
@@ -51,6 +62,22 @@ public abstract class RacePlayer implements Comparable<RacePlayer> {
 
     public int getTime() {
         return time;
+    }
+
+    public void addPowerUps() {
+        powerups.forEach(PowerUp::add);
+    }
+
+    public void removePowerUps() {
+        powerups.forEach(PowerUp::remove);
+    }
+
+    public void hidePowerUps() {
+        powerups.forEach(PowerUp::hide);
+    }
+
+    public void showPowerUps() {
+        powerups.forEach(PowerUp::show);
     }
 
     @Override
@@ -107,17 +134,49 @@ public abstract class RacePlayer implements Comparable<RacePlayer> {
         return PlayerManager.getPlayer(uuid);
     }
 
-    public abstract void onLeaveRace();
+    public void onLeaveRace() {
+        removePowerUps();
+        if (bukkitTask != null) bukkitTask.cancel();
+    }
 
-    public abstract void onDropItem(PlayerDropItemEvent e);
+    public void onDropItem(PlayerDropItemEvent e) {
+        for (PowerUp powerUp : powerups) {
+            if (powerUp.getItem().equals(e.getItemDrop().getItemStack())) {
+                e.setCancelled(true);
+                return;
+            }
+        }
+    }
 
-    public abstract void onPlayerSwitchHandItem(PlayerSwapHandItemsEvent e);
+    public void onPlayerSwitchHandItem(PlayerSwapHandItemsEvent e) {
+        for (PowerUp powerUp : powerups) {
+            if (powerUp.getItem().equals(e.getOffHandItem())) {
+                e.setCancelled(true);
+                return;
+            }
+        }
+    }
 
-    public abstract void onInventoryInteract(InventoryClickEvent e);
+    public void onInventoryInteract(InventoryClickEvent e) {
+        for (PowerUp powerUp : powerups) {
+            if (e.getCurrentItem() != null && e.getCurrentItem().equals(powerUp.getItem())) {
+                e.setCancelled(true);
+                return;
+            }
+        }
+    }
 
-    public abstract void onPlayerRightClick(PlayerInteractEvent e);
+    public void onPlayerRightClick(PlayerInteractEvent e) {
+        for (PowerUp powerUp : powerups) {
+            if (powerUp.getItem().equals(e.getItem())) {
+                powerUp.activate();
+            }
+        }
+    }
 
-    public abstract void onJoin(PlayerJoinEvent e);
+    public void onJoin(PlayerJoinEvent e) {
+        powerups.forEach(PowerUp::onPlayerJoin);
+    }
 
     public void reset() {
         finished = false;

@@ -1,7 +1,7 @@
 name: RaceCommand
 main: io.github.hielkemaps.racecommand.Main
-version: 1.0.5
+version: 1.0.6
 authors: [ "Hielke" , "Jessuh" ]
-api-version: 1.18
+api-version: 1.19
 depend: [ "CommandAPI" ]
 softdepend: [ "SkinsRestorer" ]

@@ -1,5 +1,6 @@
-package io.github.hielkemaps.racecommand.abilities;
+package io.github.hielkemaps.racecommand.powerups;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Arrow;
@@ -9,16 +10,16 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.UUID;
 
-public class ArrowAbility extends Ability {
+public class ArrowPowerUp extends PowerUp {
 
-    public ArrowAbility(UUID uuid, int slot) {
+    public ArrowPowerUp(UUID uuid, int slot) {
         super(uuid, 20, 500, item(), slot);
     }
 
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Shoot infected");
+        itemMeta.setDisplayName(ChatColor.RESET + "" + ChatColor.BOLD + "Fire Arrows");
         item.setItemMeta(itemMeta);
         return item;
     }
