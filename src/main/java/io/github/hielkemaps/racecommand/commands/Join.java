@@ -23,13 +23,13 @@ public class Join {
         //race join <player>
         arguments.add(new StringArgument("player").replaceSuggestions(ArgumentSuggestions.strings(info -> PlayerManager.getPlayer(((Player) info.sender()).getUniqueId()).getJoinableRaces())));
         new CommandAPICommand("race").withArguments(arguments).executesPlayer((p, args) -> {
-            String playerName = (String) args[0];
+            String playerName = (String) args.get(0);
             //noinspection deprecation
             UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
 
             Race race = RaceManager.getRace(uuid);
             if (race == null) {
-                throw CommandAPI.fail("Race not found");
+                throw CommandAPI.failWithString("Race not found");
             }
 
             //If joining own race
@@ -68,7 +68,7 @@ public class Join {
                 if (wPlayer.acceptInvite(uuid)) {
                     p.sendMessage(Main.PREFIX + "You joined " + playerName + "'s race!");
                 } else {
-                    throw CommandAPI.fail("Could not join race");
+                    throw CommandAPI.failWithString("Could not join race");
                 }
             }
         }).register();

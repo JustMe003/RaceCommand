@@ -41,7 +41,7 @@ public class Invite {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    Player invited = (Player) args[0];
+                    Player invited = (Player) args.get(0);
 
                     //If invite yourself
                     if (invited.getUniqueId().equals(p.getUniqueId())) {

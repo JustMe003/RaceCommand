@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.hielkemaps</groupId>
   <artifactId>RaceCommand</artifactId>
-  <version>1.0.6</version>
+  <version>1.0.7</version>
   <build>
     <resources>
       <resource>
@@ -84,7 +84,7 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.19-R0.1-SNAPSHOT</version>
+      <version>1.20.1-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -94,6 +94,10 @@
         <exclusion>
           <artifactId>gson</artifactId>
           <groupId>com.google.code.gson</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>joml</artifactId>
+          <groupId>org.joml</groupId>
         </exclusion>
         <exclusion>
           <artifactId>bungeecord-chat</artifactId>
@@ -107,12 +111,12 @@
     </dependency>
     <dependency>
       <groupId>dev.jorel</groupId>
-      <artifactId>commandapi-core</artifactId>
-      <version>8.4.0</version>
+      <artifactId>commandapi-bukkit-core</artifactId>
+      <version>9.0.3</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <artifactId>commandapi-preprocessor</artifactId>
+          <artifactId>commandapi-core</artifactId>
           <groupId>dev.jorel</groupId>
         </exclusion>
       </exclusions>

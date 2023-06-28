@@ -22,7 +22,7 @@ public class InviteOP {
     public static void register(List<Argument<?>> arguments){
 
         //race inviteOP @a - OP only
-        arguments.add(new EntitySelectorArgument<Collection<Player>>("players", EntitySelector.MANY_PLAYERS)
+        arguments.add(new EntitySelectorArgument.ManyPlayers("players")
                 .withPermission(CommandPermission.OP)
                 .replaceSuggestions(ArgumentSuggestions.strings(info -> {
                     Collection<? extends Player> players = Bukkit.getOnlinePlayers();
@@ -43,7 +43,7 @@ public class InviteOP {
                 .executesPlayer((p, args) -> {
 
                     @SuppressWarnings("unchecked")
-                    Collection<Player> invitedPlayers = (Collection<Player>) args[0];
+                    Collection<Player> invitedPlayers = (Collection<Player>) args.get(0);
                     boolean onePlayerInvited = invitedPlayers.size() == 1;
 
                     for (Player invited : invitedPlayers) {

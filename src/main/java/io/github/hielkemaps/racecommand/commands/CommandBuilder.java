@@ -84,8 +84,8 @@ public  class CommandBuilder {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    SkinManager.changeSkin(p, (String) args[0]);
-                    p.sendMessage(Main.PREFIX + "Set skin to " + args[0]);
+                    SkinManager.changeSkin(p, (String) args.get(0));
+                    p.sendMessage(Main.PREFIX + "Set skin to " + args.get(0));
                 }).register();
     }
 }

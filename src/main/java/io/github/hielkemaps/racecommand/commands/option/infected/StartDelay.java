@@ -19,7 +19,7 @@ public class StartDelay {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    int delay = (Integer) args[0];
+                    int delay = (Integer) args.get(0);
                     Race race = RaceManager.getRace(p.getUniqueId());
                     if (race instanceof InfectedRace) {
                         ((InfectedRace) race).setStartDelay(delay);
