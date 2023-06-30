@@ -41,7 +41,7 @@ public class SetFirstInfected {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    Player player = (Player) args[0];
+                    Player player = (Player) args.get(0);
                     Race race = RaceManager.getRace(p.getUniqueId());
                     if (race instanceof InfectedRace) {
                         InfectedRacePlayer racePlayer = (InfectedRacePlayer) race.getRacePlayer(player.getUniqueId());
@@ -49,7 +49,7 @@ public class SetFirstInfected {
                             ((InfectedRace) race).setFirstInfected(racePlayer);
                             p.sendMessage(Main.PREFIX + player.getName() + " will be the first infected");
                         } else {
-                            CommandAPI.fail("Could not find player " + player.getName() + ".");
+                            CommandAPI.failWithString("Could not find player " + player.getName() + ".");
                             ((InfectedRace) race).setRandomFirstInfected();
                         }
                     }

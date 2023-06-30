@@ -33,7 +33,7 @@ public class Create {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    RaceMode mode = RaceMode.valueOf((String) args[0]);
+                    RaceMode mode = RaceMode.valueOf((String) args.get(0));
                     createRace(mode, p);
                 }).register();
     }

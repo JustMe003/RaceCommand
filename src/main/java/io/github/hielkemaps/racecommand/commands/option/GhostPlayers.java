@@ -22,7 +22,7 @@ public class GhostPlayers {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    boolean value = (boolean) args[0];
+                    boolean value = (boolean) args.get(0);
                     if (Objects.requireNonNull(RaceManager.getRace(p.getUniqueId())).setGhostPlayers(value)) {
 
                         if (value) {

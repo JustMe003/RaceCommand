@@ -16,11 +16,11 @@ public class Visibility {
     public static void register(List<Argument<?>> arguments){
 
         arguments.add(new LiteralArgument("visibility"));
-        arguments.add(new MultiLiteralArgument("public", "private"));
+        arguments.add(new MultiLiteralArgument("visibility", List.of("public", "private")));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    String s = (String) args[0];
+                    String s = (String) args.get(0);
                     if (Objects.requireNonNull(RaceManager.getRace(p.getUniqueId())).setIsPublic(s.equals("public"))) {
                         p.sendMessage(Main.PREFIX + "Set race visibility to " + s);
                     } else {

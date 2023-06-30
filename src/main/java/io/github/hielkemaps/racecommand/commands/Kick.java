@@ -38,7 +38,7 @@ public class Kick {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    String playerName = (String) args[0];
+                    String playerName = (String) args.get(0);
 
                     //noinspection deprecation
                     UUID toKick = Bukkit.getOfflinePlayer(playerName).getUniqueId();

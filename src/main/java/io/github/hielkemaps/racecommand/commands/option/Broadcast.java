@@ -20,7 +20,7 @@ public class Broadcast {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    boolean value = (boolean) args[0];
+                    boolean value = (boolean) args.get(0);
 
                     Race race = RaceManager.getRace(p.getUniqueId());
                     if (race == null) return;

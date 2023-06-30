@@ -2,7 +2,6 @@ package io.github.hielkemaps.racecommand.commands;
 
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.Argument;
-import dev.jorel.commandapi.arguments.EntitySelector;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.race.Race;
@@ -19,13 +18,13 @@ public class ForceJoin {
 
     public static void register(List<Argument<?>> arguments) {
 
-        arguments.add(new EntitySelectorArgument<Collection<Player>>("players", EntitySelector.MANY_PLAYERS));
+        arguments.add(new EntitySelectorArgument.ManyPlayers("players"));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
 
                     @SuppressWarnings("unchecked")
-                    Collection<Player> players = (Collection<Player>) args[0];
+                    Collection<Player> players = (Collection<Player>) args.get(0);
                     boolean onePlayerJoins = players.size() == 1;
 
                     Race newRace = RaceManager.getRace(p.getUniqueId());

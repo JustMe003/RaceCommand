@@ -28,7 +28,7 @@ public class Start {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    int value = (int) args[0];
+                    int value = (int) args.get(0);
 
                     Race race = RaceManager.getRace(p.getUniqueId());
                     if (race == null) return;

@@ -21,7 +21,7 @@ public class VillagerRespawn {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    boolean value = (Boolean) args[0];
+                    boolean value = (Boolean) args.get(0);
 
                     Race race = RaceManager.getRace(p.getUniqueId());
                     if (race instanceof InfectedRace) {
