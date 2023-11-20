@@ -3,6 +3,8 @@ package io.github.hielkemaps.racecommand.race.types;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
+import net.kyori.adventure.text.Component;
+import org.bukkit.command.CommandSender;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -10,12 +12,11 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-import java.util.UUID;
-
 public class NormalRace extends Race {
 
-    public NormalRace(UUID uniqueId, String name) {
-        super(uniqueId,name);
+    public NormalRace(CommandSender sender) {
+        super(sender);
+        type = "§7Normal";
     }
 
     @Override
@@ -26,8 +27,9 @@ public class NormalRace extends Race {
     @Override
     protected void onRaceStop() {
         //show results if any, otherwise show stop message
-        if (players.stream().noneMatch(RacePlayer::isFinished)) sendMessage(Main.PREFIX + "Stopped race");
-        else printResults();
+        if (players.stream().noneMatch(RacePlayer::isFinished)) {
+            sendMessage(Main.PREFIX.append(Component.text("Stopped race")));
+        } else printResults();
     }
 
     @Override

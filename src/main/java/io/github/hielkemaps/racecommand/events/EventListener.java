@@ -24,6 +24,7 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,7 +49,7 @@ public class EventListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent e) {
         Player player = e.getPlayer();
 
-        Race race = RaceManager.getRace(player.getUniqueId());
+        Race race = RaceManager.getRace(player);
         if (race != null) {
             if (race.hasStarted()) {
                 RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
@@ -58,16 +59,28 @@ public class EventListener implements Listener {
     }
 
 
+    public static List<UUID> playersJoinEvent = new ArrayList<>();
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player player = e.getPlayer();
         UUID uuid = player.getUniqueId();
 
+        //If waiting to join event, join race
+        if(playersJoinEvent.contains(uuid)){
+            for( Race race: RaceManager.getPublicRaces()){
+                if(race.isEvent()){
+                    race.addPlayer(uuid);
+                    playersJoinEvent.remove(uuid);
+                }
+            }
+        }
+
         PlayerWrapper wPlayer = PlayerManager.getPlayer(uuid);
         wPlayer.onPlayerJoin();
 
         //Remove inRace tag if player is not in current active race
-        Race race = RaceManager.getRace(uuid);
+        Race race = RaceManager.getRace(player);
         if (race != null) {
 
             //if player rejoins in active race, we must sync times with the other players
@@ -88,6 +101,13 @@ public class EventListener implements Listener {
 
             //always remove tag just to be sure
             player.removeScoreboardTag("inRace");
+
+            //If not in race and there is an event race, we invite the player
+            for (Race pr : RaceManager.getPublicRaces()) {
+                if (pr.isEvent()) {
+                    pr.invitePlayer(uuid);
+                }
+            }
         }
 
         CommandAPI.updateRequirements(player);
@@ -97,23 +117,22 @@ public class EventListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent e) {
 
         //Leave or disband race when race hasn't started
-        //Otherwise you could easily cheat because you won't get tped when the race starts
-        UUID player = e.getPlayer().getUniqueId();
+        //Otherwise you could easily cheat because you won't get teleported when the race starts
+        Player player = e.getPlayer();
         Race race = RaceManager.getRace(player);
-        if (race != null) {
+        if (race == null) return;
 
-            //if after leaving there are 1 or no players left in the race, we disband it
-            if (race.getOnlinePlayerCount() <= 2) {
-                RaceManager.disbandRace(race.getOwner());
-            }
-
-            //if the race has not started yet and player is not owner
-            if (!race.hasStarted() && !race.isOwner(player)) {
-                race.leavePlayer(player); //player leaves the race if it hasn't started yet
-            }
-
-            race.onPlayerQuit(e, race.getRacePlayer(e.getPlayer().getUniqueId()));
+        //if after leaving there are no players left in the race, we disband it
+        if (!race.isEvent() && race.getOnlinePlayerCount() <= 1) {
+            RaceManager.disbandRace(race);
         }
+
+        //if the race has not started yet and player is not owner
+        if (!race.hasStarted() && !race.isOwner(player.getUniqueId())) {
+            race.leavePlayer(player); //player leaves the race if it hasn't started yet
+        }
+
+        race.onPlayerQuit(e, race.getRacePlayer(e.getPlayer().getUniqueId()));
     }
 
     @EventHandler
@@ -121,7 +140,7 @@ public class EventListener implements Listener {
 
         //If player damages another player
         if (e.getDamager() instanceof Player && e.getEntity() instanceof Player) {
-            UUID player = e.getEntity().getUniqueId();
+            Player player = (Player) e.getEntity();
             UUID attacker = e.getDamager().getUniqueId();
 
             Race playerRace = RaceManager.getRace(player);
@@ -130,7 +149,7 @@ public class EventListener implements Listener {
                 //If both players are in the same race
                 // and race has started
                 if (playerRace.hasPlayer(attacker) && playerRace.hasStarted()) {
-                    RacePlayer racePlayer = playerRace.getRacePlayer(player);
+                    RacePlayer racePlayer = playerRace.getRacePlayer(player.getUniqueId());
                     RacePlayer raceAttacker = playerRace.getRacePlayer(attacker);
 
                     //if both players are ingame
@@ -152,7 +171,7 @@ public class EventListener implements Listener {
                 Player player = (Player) e.getEntity();
                 PlayerWrapper p = PlayerManager.getPlayer(player.getUniqueId());
                 if (p.isInInfectedRace()) {
-                    Race race = RaceManager.getRace(player.getUniqueId());
+                    Race race = RaceManager.getRace(player);
                     RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
                     if (!racePlayer.isInfected()) {
 
@@ -178,7 +197,7 @@ public class EventListener implements Listener {
 
         if (player.isInRace()) {
 
-            Race race = RaceManager.getRace(e.getPlayer().getUniqueId());
+            Race race = RaceManager.getRace(e.getPlayer());
             if (race == null) return;
 
             //Freeze players when starting race

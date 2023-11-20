@@ -5,7 +5,14 @@ import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.title.Title;
 import org.bukkit.*;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -18,6 +25,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.*;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,11 +33,12 @@ public abstract class Race {
 
     private final UUID id = UUID.randomUUID();
     private final String name;
-    protected final UUID owner;
+    protected UUID owner = null;
     protected final List<RacePlayer> players = new ArrayList<>();
     private boolean isStarting = false;
     private boolean hasStarted = false;
     private final Set<UUID> InvitedPlayers = new HashSet<>();
+    protected String type;
     private int place = 1;
 
     //options
@@ -38,29 +47,51 @@ public abstract class Race {
     private boolean broadcast = false;
     private boolean ghostPlayers = false;
 
+    private boolean isEvent = false;
+
     //tasks
     private BukkitTask countDownTask;
     private BukkitTask countDownStopTask;
     private BukkitTask playingTask;
+    private final int[] prizes = {0, 0, 0, 0};
 
-    public Race(UUID owner, String name) {
+    public Race(CommandSender sender) {
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
+            this.name = sender.getName();
+            this.owner = player.getUniqueId();
 
-        this.owner = owner;
-        this.name = name;
+            RacePlayer racePlayer = new RacePlayer(this, owner);
+            players.add(racePlayer);
+            onRacePlayerJoin(racePlayer);
 
-        RacePlayer racePlayer = new RacePlayer(this, owner);
-        players.add(racePlayer);
-        onRacePlayerJoin(racePlayer);
+            PlayerWrapper pw = PlayerManager.getPlayer(owner);
+            pw.setInRace(true);
 
-        PlayerWrapper pw = PlayerManager.getPlayer(owner);
-        pw.setInRace(true);
+            Component msg = Main.PREFIX
+                    .append(Component.text("Created race! Invite players with "))
+                    .append(Component.text("/race invite", NamedTextColor.WHITE).clickEvent(ClickEvent.suggestCommand("/race invite ")).hoverEvent(Component.text("Click to suggest!")));
+            player.sendMessage(msg);
+            return;
+        }
+
+        //Races created by console or command block
+        this.isEvent = true;
+        this.name = "Event";
+        setIsPublic(true);
+        setCountDown(300);
+        start();
+        setBroadcast(true);
+
+        // Invite all players in server
+        Bukkit.getOnlinePlayers().forEach(player -> invitePlayer(player.getUniqueId()));
     }
 
     public void start() {
         place = 1;
         isStarting = true;
 
-        sendMessage(Main.PREFIX + "Starting race...");
+        sendMessage(Main.PREFIX.append(Component.text("Starting race...")));
 
         //Tp players to start
         for (RacePlayer racePlayer : players) {
@@ -128,7 +159,7 @@ public abstract class Race {
 
             onCountdownFinish();
 
-            sendMessage(Main.PREFIX + "Race has started");
+            sendMessage(Main.PREFIX.append(Component.text("Race has started")));
         }, 20L * countDown);
     }
 
@@ -141,7 +172,7 @@ public abstract class Race {
         //stop race if everyone has finished
         if (players.stream().allMatch(RacePlayer::isFinished)) {
             stop();
-            sendMessage(Main.PREFIX + "Race has ended");
+            sendMessage(Main.PREFIX.append(Component.text("Race has ended")));
         }
 
         for (RacePlayer racePlayer : players) {
@@ -181,13 +212,11 @@ public abstract class Race {
         //Get finish time
         int time = -1;
         ScoreboardManager m = Bukkit.getScoreboardManager();
-        if (m != null) {
-            Objective timeObjective = m.getMainScoreboard().getObjective("time");
-            if (timeObjective != null) {
-                Score score = timeObjective.getScore(player.getName());
-                if (score.isScoreSet()) {
-                    time = score.getScore();
-                }
+        Objective timeObjective = m.getMainScoreboard().getObjective("time");
+        if (timeObjective != null) {
+            Score score = timeObjective.getScore(player.getName());
+            if (score.isScoreSet()) {
+                time = score.getScore();
             }
         }
 
@@ -207,12 +236,14 @@ public abstract class Race {
                 CommandAPI.updateRequirements(onlinePlayer);
             }
         } else {
-            //Otherwise update invited
+            //Otherwise, update invited
             for (UUID uuid : InvitedPlayers) {
                 PlayerManager.getPlayer(uuid).updateRequirements();
             }
             //Update start/stop requirement for owner only
-            PlayerManager.getPlayer(owner).updateRequirements();
+            if (owner != null) {
+                PlayerManager.getPlayer(owner).updateRequirements();
+            }
         }
     }
 
@@ -237,7 +268,10 @@ public abstract class Race {
         Player addedPlayer = Bukkit.getPlayer(uuid);
         if (addedPlayer == null) return;
 
-        sendMessageToRaceMembers(Main.PREFIX + ChatColor.GREEN + "+ " + ChatColor.RESET + ChatColor.GRAY + addedPlayer.getName());
+        Component joinMsg = Main.PREFIX
+                .append(Component.text("+ ", NamedTextColor.GREEN))
+                .append(Component.text(addedPlayer.getName(), NamedTextColor.GRAY));
+        sendMessageToRaceMembers(joinMsg);
         RacePlayer newPlayer = new RacePlayer(this, uuid);
         players.add(newPlayer);
 
@@ -249,38 +283,50 @@ public abstract class Race {
             addedPlayer.performCommand("restart");
         }
 
-        PlayerManager.getPlayer(owner).updateRequirements();
+        if (owner != null) {
+            PlayerManager.getPlayer(owner).updateRequirements();
+        }
         onRacePlayerJoin(newPlayer);
+
+        String text = isEvent ? "You joined the race!" : "You joined " + name + "'s race!";
+        pw.sendMessage(Main.PREFIX.append(Component.text(text)));
     }
 
     public boolean hasPlayer(UUID uuid) {
         return getRacePlayer(uuid) != null;
     }
 
-    public void leavePlayer(UUID uuid) {
-        removePlayer(uuid);
+    public void leavePlayer(Player player) {
+        removePlayer(player.getUniqueId());
+
+        String text = isEvent ? "You have left the race" : "You have left " + name + "'s race";
+        player.sendMessage(Main.PREFIX.append(Component.text(text)));
     }
 
     public void kickPlayer(UUID uuid) {
         removePlayer(uuid);
 
         OfflinePlayer kickedPlayer = Bukkit.getOfflinePlayer(uuid);
-        if (kickedPlayer.isOnline()) {
-            kickedPlayer.getPlayer().sendMessage(Main.PREFIX + "You have been kicked from the race");
+        if (kickedPlayer.getPlayer() != null) {
+            kickedPlayer.getPlayer().sendMessage(Main.PREFIX.append(Component.text("You have been kicked from the race")));
         }
     }
 
     private void removePlayer(UUID uuid) {
         RacePlayer racePlayer = getRacePlayer(uuid);
         onPlayerLeave(racePlayer);
-
         players.remove(racePlayer);
 
-        sendMessageToRaceMembers(Main.PREFIX + ChatColor.RED + "- " + ChatColor.RESET + ChatColor.GRAY + racePlayer.getName());
+        Component leaveMessage = Main.PREFIX
+                .append(Component.text("-", NamedTextColor.RED))
+                .append(Component.text(racePlayer.getName(), NamedTextColor.GRAY));
+        sendMessageToRaceMembers(leaveMessage);
 
         PlayerWrapper pw = PlayerManager.getPlayer(uuid);
         pw.setInRace(false);
-        PlayerManager.getPlayer(owner).updateRequirements();
+        if (owner != null) {
+            PlayerManager.getPlayer(owner).updateRequirements();
+        }
     }
 
     protected void disband() {
@@ -292,7 +338,7 @@ public abstract class Race {
         //Clear outgoing invites
         getInvitedPlayers().forEach(uuid -> {
             PlayerWrapper wPlayer = PlayerManager.getPlayer(uuid);
-            wPlayer.removeInvite(owner);
+            wPlayer.removeInvite(name);
         });
 
         for (RacePlayer racePlayer : players) {
@@ -302,8 +348,11 @@ public abstract class Race {
             Player player = racePlayer.getPlayer();
             if (player == null) continue; //we can do nothing with offline players
 
-            if (!racePlayer.getUniqueId().equals(owner))
-                player.sendMessage(Main.PREFIX + "The race has been disbanded");
+            if (racePlayer.getUniqueId().equals(owner)) {
+                player.sendMessage(Main.PREFIX.append(Component.text("You have disbanded the race")));
+            } else {
+                player.sendMessage(Main.PREFIX.append(Component.text("The race has been disbanded")));
+            }
         }
     }
 
@@ -324,14 +373,7 @@ public abstract class Race {
 
     public boolean setIsPublic(boolean value) {
         if (value == isPublic) return false;
-
-        isPublic = value;
-
-        if (value) {
-            RaceManager.publicRaces.add(owner);
-        } else {
-            RaceManager.publicRaces.remove(owner);
-        }
+        this.isPublic = value;
 
         updateRequirements();
         return true;
@@ -354,7 +396,7 @@ public abstract class Race {
 
     public void invitePlayer(UUID invited) {
         InvitedPlayers.add(invited);
-        PlayerManager.getPlayer(invited).addInvite(owner);
+        PlayerManager.getPlayer(invited).receiveInvite(this);
     }
 
     public void removeInvited(UUID invited) {
@@ -369,8 +411,7 @@ public abstract class Race {
         return InvitedPlayers;
     }
 
-    public void sendMessage(String message) {
-
+    public void sendMessage(Component message) {
         if (broadcast) {
             Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(message));
         } else {
@@ -378,7 +419,7 @@ public abstract class Race {
         }
     }
 
-    public void sendMessageToRaceMembers(String message) {
+    public void sendMessageToRaceMembers(Component message) {
         for (RacePlayer racePlayer : players) {
             Player p = racePlayer.getPlayer();
             if (p != null) p.sendMessage(message);
@@ -393,29 +434,28 @@ public abstract class Race {
     }
 
     public void printResults() {
-        sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           " + ChatColor.RESET + "" + ChatColor.BOLD + " Results " + ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           ");
+        sendMessage(Component.text("            ", NamedTextColor.GOLD, TextDecoration.STRIKETHROUGH)
+                .append(Component.text(" Results ", NamedTextColor.WHITE, TextDecoration.BOLD))
+                .append(Component.text("            ", NamedTextColor.GOLD, TextDecoration.STRIKETHROUGH)));
+
         players.sort(Comparator.comparing(RacePlayer::getPlace));
 
         for (RacePlayer player : players) {
-            sendMessage(player.toString());
+            sendMessage(player.getResult());
         }
-        sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "                                    ");
+        sendMessage(Component.text("                                     ", NamedTextColor.GOLD, TextDecoration.STRIKETHROUGH));
     }
 
     /**
-     * @param excludedPlayer player in race who's time won't be picked
+     * @param excludedPlayer player in race whose time won't be picked
      * @return time objective score for all players in race, -1 if not found
      */
     public int getCurrentObjective(UUID excludedPlayer, String name) {
         int time = -1;
 
-        ScoreboardManager sm = Bukkit.getScoreboardManager();
-        if (sm == null) return time;
-
-        Scoreboard s = sm.getMainScoreboard();
+        Scoreboard s = Bukkit.getScoreboardManager().getMainScoreboard();
         Objective timeObj = s.getObjective(name);
         if (timeObj == null) return time;
-
 
         for (RacePlayer racePlayer : players) {
             if (racePlayer.getUniqueId().equals(excludedPlayer)) continue;
@@ -475,21 +515,17 @@ public abstract class Race {
             return;
         }
 
-        ScoreboardManager sm = Bukkit.getScoreboardManager();
-        if (sm != null) {
-            Scoreboard s = sm.getMainScoreboard();
+        Scoreboard s = Bukkit.getScoreboardManager().getMainScoreboard();
+        Objective timeObj = s.getObjective("time");
+        if (timeObj != null) {
+            Score score = timeObj.getScore(player.getName());
+            score.setScore(timeToSet);
+        }
 
-            Objective timeObj = s.getObjective("time");
-            if (timeObj != null) {
-                Score score = timeObj.getScore(player.getName());
-                score.setScore(timeToSet);
-            }
-
-            Objective tickObj = s.getObjective("time_tick");
-            if (tickObj != null) {
-                Score score = tickObj.getScore(player.getName());
-                score.setScore(ticksToSet);
-            }
+        Objective tickObj = s.getObjective("time_tick");
+        if (tickObj != null) {
+            Score score = tickObj.getScore(player.getName());
+            score.setScore(ticksToSet);
         }
     }
 
@@ -515,13 +551,26 @@ public abstract class Race {
     }
 
     public void onPlayerFinish(RacePlayer player, int place, int time) {
+        if (isEvent) {
+            if (place == 1) player.givePoints(prizes[0]);
+            if (place == 2) player.givePoints(prizes[1]);
+            if (place == 3) player.givePoints(prizes[2]);
+            if (place >= 4) player.givePoints(prizes[3]);
+        }
+
         //Let players know
-        sendMessage(Main.PREFIX + ChatColor.GREEN + player.getName() + " finished " + Util.ordinal(place) + " place!" + ChatColor.WHITE + " (" + Util.getTimeString(time) + ")");
+        Component finishMsg = Main.PREFIX
+                .append(Component.text(player.getName() + " finished " + Util.ordinal(place) + " place!", NamedTextColor.GREEN))
+                .append(Component.text("(" + Util.getTimeString(time) + ")", NamedTextColor.WHITE));
+        sendMessage(finishMsg);
     }
 
     public void onCountdownFinish() {
         players.stream().map(RacePlayer::getPlayer).filter(Objects::nonNull).forEach(player -> {
-            player.sendTitle(" ", ChatColor.BOLD + "GO", 2, 18, 2);
+
+            // Show "GO" title
+            Title.Times times = Title.Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
+            player.showTitle(Title.title(Component.text(""), Component.text("GO", NamedTextColor.WHITE, TextDecoration.BOLD), times));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 2);
         });
     }
@@ -549,4 +598,19 @@ public abstract class Race {
     public abstract void onPlayerRespawn(PlayerRespawnEvent e, RacePlayer racePlayer);
 
     protected abstract void onPlayerLeave(RacePlayer racePlayer);
+
+    public boolean isEvent() {
+        return isEvent;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setPrizes(int first, int second, int third, int fourth) {
+        prizes[0] = first;
+        prizes[1] = second;
+        prizes[2] = third;
+        prizes[3] = fourth;
+    }
 }

@@ -13,8 +13,9 @@ import io.github.hielkemaps.racecommand.race.types.NormalRace;
 import io.github.hielkemaps.racecommand.race.types.PvpRace;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -26,27 +27,30 @@ import java.util.function.Predicate;
 public class Commands {
 
     public Commands() {
-        List<Argument> arguments;
 
         //CREATE NORMAL
-        arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("create").withRequirement(playerInRace.negate()));
         new CommandAPICommand("race")
-                .withArguments(arguments)
+                .withArguments(new LiteralArgument("create").withRequirement(playerInRace.negate()))
                 .executesPlayer((p, args) -> {
                     createRace(RaceMode.normal, p);
                 }).register();
 
         //CREATE
-        arguments = new ArrayList<>();
+        List<Argument<?>> arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("create").withRequirement(playerInRace.negate()));
         arguments.add(new MultiLiteralArgument(RaceMode.getNames(RaceMode.class)));
         new CommandAPICommand("race")
                 .withArguments(arguments)
-                .executesPlayer((p, args) -> {
-                    RaceMode mode = RaceMode.valueOf((String) args[0]);
-                    createRace(mode, p);
-                }).register();
+                .executesPlayer((sender, args) -> {
+                    RaceMode mode = RaceMode.valueOf((String) args.get(0));
+                    createRace(mode, sender);
+                })
+                .executes((sender, args) -> {
+                    RaceMode mode = RaceMode.valueOf((String) args.get(0));
+                    createRace(mode, sender);
+                    Bukkit.getLogger().info("Creating race!");
+                })
+                .register();
 
         //START
         arguments = new ArrayList<>();
@@ -55,7 +59,7 @@ public class Commands {
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
 
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Race race = RaceManager.getRace(p);
                     if (race == null) return;
 
                     race.start();
@@ -68,9 +72,9 @@ public class Commands {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    int value = (int) args[0];
+                    int value = (int) args.get("countdown");
 
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Race race = RaceManager.getRace(p);
                     if (race == null) return;
 
                     race.setCountDown(value);
@@ -84,7 +88,7 @@ public class Commands {
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
 
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Race race = RaceManager.getRace(p);
                     if (race == null) return;
                     race.stop();
                 }).register();
@@ -92,11 +96,11 @@ public class Commands {
         //INVITE
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("invite").withRequirement(playerInRace.and(playerIsRaceOwner)));
-        arguments.add(new PlayerArgument("player").withRequirement(sender -> !sender.isOp()).replaceSuggestions(info -> {
+        arguments.add(new PlayerArgument("player").withRequirement(sender -> !sender.isOp()).replaceSuggestions(ArgumentSuggestions.strings(info -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<String> names = new ArrayList<>();
 
-            Race race = RaceManager.getRace(((Player) info.sender()).getUniqueId());
+            Race race = RaceManager.getRace(((Player) info.sender()));
             if (race == null) return new String[0];
 
             //Don't show players that are already in your race
@@ -105,54 +109,47 @@ public class Commands {
                 names.add(p.getName());
             }
             return names.toArray(new String[0]);
-        }));
+        })));
 
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    Player invited = (Player) args[0];
+                    Player invited = (Player) args.get(0);
 
                     //If invite yourself
                     if (invited.getUniqueId().equals(p.getUniqueId())) {
-                        p.sendMessage(Main.PREFIX + "You can't invite yourself");
+                        p.sendMessage(Main.PREFIX.append(Component.text("You can't invite yourself")));
                         return;
                     }
 
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Race race = RaceManager.getRace(p);
                     if (race == null) return;
 
                     //If player is already in race
                     if (race.hasPlayer(invited.getUniqueId())) {
-                        p.sendMessage(Main.PREFIX + "That player is already in your race");
+                        p.sendMessage(Main.PREFIX.append(Component.text("That player is already in your race")));
                         return;
                     }
 
                     //If already invited
                     if (race.hasInvited(invited)) {
-                        p.sendMessage(Main.PREFIX + "You have already invited " + invited.getName());
+                        p.sendMessage(Main.PREFIX.append(Component.text("You have already invited " + invited.getName())));
                         return;
                     }
 
                     race.invitePlayer(invited.getUniqueId());
-                    TextComponent msg = new TextComponent(Main.PREFIX + p.getName() + " wants to race! ");
-                    TextComponent accept = new TextComponent(ChatColor.GREEN + "[Accept]");
-                    accept.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/race join " + p.getName()));
-                    msg.addExtra(accept);
-
-                    Objects.requireNonNull(Bukkit.getPlayer(invited.getUniqueId())).spigot().sendMessage(msg);
-                    p.sendMessage(Main.PREFIX + "Invited player " + invited.getName());
-
+                    p.sendMessage(Main.PREFIX.append(Component.text("Invited player " + invited.getName())));
                 }).register();
 
 
         //INVITE ALL - OP ONLY
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("invite").withRequirement(playerInRace.and(playerIsRaceOwner)));
-        arguments.add(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS).withPermission(CommandPermission.OP).replaceSuggestions(info -> {
+        arguments.add(new EntitySelectorArgument.ManyPlayers("players").withPermission(CommandPermission.OP).replaceSuggestions(ArgumentSuggestions.strings(info -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<String> names = new ArrayList<>();
 
-            Race race = RaceManager.getRace(((Player) info.sender()).getUniqueId());
+            Race race = RaceManager.getRace(((Player) info.sender()));
             if (race == null) return new String[0];
 
             //Don't show players that are already in your race
@@ -161,61 +158,61 @@ public class Commands {
                 names.add(p.getName());
             }
             return names.toArray(new String[0]);
-        }));
+        })));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
                     @SuppressWarnings("unchecked")
-                    Collection<Player> invitedPlayers = (Collection<Player>) args[0];
+                    Collection<Player> invitedPlayers = (Collection<Player>) args.get(0);
                     boolean onePlayerInvited = invitedPlayers.size() == 1;
 
                     for (Player invited : invitedPlayers) {
 
                         //If invite yourself
                         if (invited.getUniqueId().equals(p.getUniqueId())) {
-                            if (onePlayerInvited) p.sendMessage(Main.PREFIX + "You can't invite yourself");
+                            if (onePlayerInvited) {
+                                p.sendMessage(Main.PREFIX.append(Component.text("You can't invite yourself")));
+                            }
                             continue;
                         }
 
-                        Race race = RaceManager.getRace(p.getUniqueId());
+                        Race race = RaceManager.getRace(p);
                         if (race == null) return;
 
                         //If player is already in your race
                         if (race.hasPlayer(invited.getUniqueId())) {
-                            if (onePlayerInvited) p.sendMessage(Main.PREFIX + "That player is already in your race");
+                            if (onePlayerInvited) {
+                                p.sendMessage(Main.PREFIX.append(Component.text("That player is already in your race")));
+                            }
                             continue;
                         }
 
                         //OPs invitation will always go through, even if already invited
-
                         race.invitePlayer(invited.getUniqueId());
-                        TextComponent msg = new TextComponent(Main.PREFIX + p.getName() + " wants to race! ");
-                        TextComponent accept = new TextComponent(ChatColor.GREEN + "[Accept]");
-                        accept.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/race join " + p.getName()));
-                        msg.addExtra(accept);
+                        Component text = Main.PREFIX
+                                .append(Component.text(p.getName() + " wants to race! "))
+                                .append(Component.text("[Accept]", NamedTextColor.GREEN)
+                                        .clickEvent(ClickEvent.runCommand("/race join " + race.getName())));
 
-                        Objects.requireNonNull(Bukkit.getPlayer(invited.getUniqueId())).spigot().sendMessage(msg);
-                        p.sendMessage(Main.PREFIX + "Invited player " + invited.getName());
+                        invited.sendMessage(text);
+                        p.sendMessage(Main.PREFIX.append(Component.text("Invited player " + invited.getName())));
                     }
                 }).register();
 
         //JOIN
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("join").withRequirement(playerHasJoinableRaces));
-        arguments.add(new StringArgument("player").replaceSuggestions((info) -> PlayerManager.getPlayer(((Player) info.sender()).getUniqueId()).getJoinableRaces()));
+        arguments.add(new StringArgument("player").replaceSuggestions(ArgumentSuggestions.strings((info) -> PlayerManager.getPlayer(((Player) info.sender()).getUniqueId()).getJoinableRaces())));
         new CommandAPICommand("race").withArguments(arguments).executesPlayer((p, args) -> {
-            String playerName = (String) args[0];
-            UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
-
-            Race race = RaceManager.getRace(uuid);
+            String raceName = (String) args.get(0);
+            Race race = RaceManager.getRace(raceName);
             if (race == null) {
-                CommandAPI.fail("Race not found");
-                return;
+                throw CommandAPI.failWithString("Race not found");
             }
 
-            //If joining own race
+            //If joining own races
             if (race.hasPlayer(p.getUniqueId())) {
-                p.sendMessage(Main.PREFIX + "You already joined " + playerName + "'s race");
+                p.sendMessage(Main.PREFIX.append(Component.text("You already joined this race")));
                 return;
             }
 
@@ -224,32 +221,28 @@ public class Commands {
             if (race.isPublic() || race.hasInvited(p)) {
 
                 if (race.hasStarted()) {
-                    p.sendMessage(Main.PREFIX + "Can't join race: This race has already started");
+                    p.sendMessage(Main.PREFIX.append(Component.text("Can't join race: This race has already started")));
                     return;
                 }
 
                 //If player in existing race
                 if (wPlayer.isInRace()) {
-                    Race raceToLeave = RaceManager.getRace(p.getUniqueId());
+                    Race raceToLeave = RaceManager.getRace(p);
 
                     if (raceToLeave != null) {
                         UUID raceOwner = raceToLeave.getOwner();
 
                         if (raceOwner.equals(p.getUniqueId())) {
-                            RaceManager.disbandRace(p.getUniqueId());
-                            p.sendMessage(Main.PREFIX + "You have disbanded the race");
+                            RaceManager.disbandRace(raceToLeave);
                         } else {
-                            raceToLeave.leavePlayer(p.getUniqueId());
-                            p.sendMessage(Main.PREFIX + "You have left " + raceToLeave.getName() + "'s race");
+                            raceToLeave.leavePlayer(p);
                         }
                     }
                 }
 
                 //Join race
-                if (wPlayer.acceptInvite(uuid)) {
-                    p.sendMessage(Main.PREFIX + "You joined " + playerName + "'s race!");
-                } else {
-                    CommandAPI.fail("Could not join race");
+                if (!wPlayer.acceptInvite(raceName)) {
+                    throw CommandAPI.failWithString("Could not join race");
                 }
             }
         }).register();
@@ -260,8 +253,7 @@ public class Commands {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    RaceManager.disbandRace(p.getUniqueId());
-                    p.sendMessage(Main.PREFIX + "You have disbanded the race");
+                    RaceManager.disbandRace(RaceManager.getRace(p));
                 }).register();
 
         //LEAVE
@@ -270,10 +262,9 @@ public class Commands {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Race race = RaceManager.getRace(p);
                     if (race != null) {
-                        race.leavePlayer(p.getUniqueId());
-                        p.sendMessage(Main.PREFIX + "You have left the race");
+                        race.leavePlayer(p);
                     }
                 }).register();
 
@@ -284,13 +275,18 @@ public class Commands {
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
 
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Race race = RaceManager.getRace(p);
                     if (race == null) return;
 
                     String ownerName = race.getName();
 
-                    p.sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           " + ChatColor.RESET + "" + ChatColor.BOLD + " " + ownerName + "'s race " + ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           ");
-                    p.sendMessage("Visibility: " + (race.isPublic() ? ChatColor.GREEN + "public" : ChatColor.RED + "private"));
+                    if (race.isEvent()) {
+                        p.sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "             " + ChatColor.RESET + "" + ChatColor.BOLD + " Event race " + ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "             ");
+                    } else {
+                        p.sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           " + ChatColor.RESET + "" + ChatColor.BOLD + " " + ownerName + "'s race " + ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           ");
+                    }
+                    p.sendMessage("Visibility: " + (race.isPublic() ? ChatColor.GREEN + "Public" : ChatColor.RED + "Private"));
+                    p.sendMessage("Type: " + race.getType());
                     p.sendMessage("Players:");
 
                     for (RacePlayer racePlayer : race.getPlayers()) {
@@ -317,11 +313,11 @@ public class Commands {
                             str.append(ChatColor.GREEN).append(" [Owner]");
                         }
 
-                        if(racePlayer.isInfected()){
+                        if (racePlayer.isInfected()) {
                             str.append(ChatColor.GREEN).append(" [Infected]");
                         }
 
-                        if(racePlayer.isSkeleton()){
+                        if (racePlayer.isSkeleton()) {
                             str.append(ChatColor.WHITE).append(" [Skeleton]");
                         }
 
@@ -333,11 +329,11 @@ public class Commands {
         //KICK
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("kick").withRequirement(playerInRace.and(playerIsRaceOwner).and(playerToKick)));
-        arguments.add(new StringArgument("player").replaceSuggestions((info) ->
+        arguments.add(new StringArgument("player").replaceSuggestions(ArgumentSuggestions.strings((info) ->
         {
             Player p = (Player) info.sender();
             List<String> names = new ArrayList<>();
-            Race race = RaceManager.getRace(p.getUniqueId());
+            Race race = RaceManager.getRace(p);
             if (race == null) return new String[0];
 
             List<RacePlayer> players = race.getPlayers();
@@ -348,19 +344,19 @@ public class Commands {
             }
 
             return names.toArray(new String[0]);
-        }));
+        })));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    String playerName = (String) args[0];
+                    String playerName = (String) args.get(0);
 
                     UUID toKick = Bukkit.getOfflinePlayer(playerName).getUniqueId();
 
                     if (p.getUniqueId().equals(toKick)) {
-                        p.sendMessage(Main.PREFIX + "You can't kick yourself");
+                        p.sendMessage(Main.PREFIX.append(Component.text("You can't kick yourself")));
                         return;
                     }
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Race race = RaceManager.getRace(p);
                     race.kickPlayer(toKick);
                 }).register();
 
@@ -372,11 +368,11 @@ public class Commands {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    String s = (String) args[0];
-                    if (Objects.requireNonNull(RaceManager.getRace(p.getUniqueId())).setIsPublic(s.equals("public"))) {
-                        p.sendMessage(Main.PREFIX + "Set race visibility to " + s);
+                    String s = (String) args.get(0);
+                    if (Objects.requireNonNull(RaceManager.getRace(p)).setIsPublic(s.equals("public"))) {
+                        p.sendMessage(Main.PREFIX.append(Component.text("Set race visibility to " + s)));
                     } else {
-                        p.sendMessage(Main.PREFIX + ChatColor.RED + "Nothing changed. Race visibility was already " + s);
+                        p.sendMessage(Main.PREFIX.append(Component.text("Nothing changed. Race visibility was already " + s, NamedTextColor.RED)));
                     }
                 }).register();
 
@@ -388,16 +384,16 @@ public class Commands {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    boolean value = (boolean) args[0];
-                    if (Objects.requireNonNull(RaceManager.getRace(p.getUniqueId())).setGhostPlayers(value)) {
+                    boolean value = (boolean) args.get(0);
+                    if (RaceManager.getRace(p).setGhostPlayers(value)) {
 
                         if (value) {
-                            p.sendMessage(Main.PREFIX + "Players in race will now be see-through");
+                            p.sendMessage(Main.PREFIX.append(Component.text("Players in race will now be see-through")));
                         } else {
-                            p.sendMessage(Main.PREFIX + "Players in race will no longer be see-through");
+                            p.sendMessage(Main.PREFIX.append(Component.text("Players in race will no longer be see-through")));
                         }
                     } else {
-                        p.sendMessage(Main.PREFIX + ChatColor.RED + "Nothing changed. ghostPlayers was already set to " + value);
+                        p.sendMessage(Main.PREFIX.append(Component.text("Nothing changed. ghostPlayers was already set to " + value, NamedTextColor.RED)));
                     }
                 }).register();
 
@@ -406,11 +402,11 @@ public class Commands {
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("option").withRequirement(playerInRace.and(playerIsRaceOwner)));
         arguments.add(new LiteralArgument("firstInfected").withRequirement(playerInInfectedRace));
-        arguments.add(new PlayerArgument("player").replaceSuggestions(info -> {
+        arguments.add(new EntitySelectorArgument.OnePlayer("player").replaceSuggestions(ArgumentSuggestions.strings(info -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<String> names = new ArrayList<>();
 
-            Race race = RaceManager.getRace(((Player) info.sender()).getUniqueId());
+            Race race = RaceManager.getRace(((Player) info.sender()));
             if (race == null) return new String[0];
 
             //Only show players that are in your race
@@ -420,19 +416,19 @@ public class Commands {
                 }
             }
             return names.toArray(new String[0]);
-        }));
+        })));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    Player player = (Player) args[0];
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Player player = (Player) args.get(0);
+                    Race race = RaceManager.getRace(p);
                     if (race instanceof InfectedRace) {
                         RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
                         if (racePlayer != null) {
                             ((InfectedRace) race).setFirstInfected(racePlayer);
-                            p.sendMessage(Main.PREFIX + player.getName() + " will be the first infected");
+                            p.sendMessage(Main.PREFIX.append(Component.text(player.getName() + " will be the first infected")));
                         } else {
-                            CommandAPI.fail("Could not find player " + player.getName() + ".");
+                            throw CommandAPI.failWithString("Could not find player " + player.getName());
                         }
                     }
                 }).register();
@@ -445,11 +441,11 @@ public class Commands {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    int delay = (Integer) args[0];
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    int delay = (Integer) args.get(0);
+                    Race race = RaceManager.getRace(p);
                     if (race instanceof InfectedRace) {
                         ((InfectedRace) race).setInfectedDelay(delay);
-                        race.sendMessage(Main.PREFIX + "Infected delay set to " + delay + " seconds");
+                        race.sendMessage(Main.PREFIX.append(Component.text("Infected delay set to " + delay + " seconds")));
                     }
                 }).register();
 
@@ -461,36 +457,36 @@ public class Commands {
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
-                    boolean value = (boolean) args[0];
+                    boolean value = (boolean) args.get(0);
 
-                    Race race = RaceManager.getRace(p.getUniqueId());
+                    Race race = RaceManager.getRace(p);
                     if (race == null) return;
 
                     if (race.setBroadcast(value)) {
                         if (value) {
-                            p.sendMessage(Main.PREFIX + "Enabled broadcasting");
+                            p.sendMessage(Main.PREFIX.append(Component.text("Enabled broadcasting")));
                         } else {
-                            p.sendMessage(Main.PREFIX + "Disabled broadcasting");
+                            p.sendMessage(Main.PREFIX.append(Component.text("Disabled broadcasting")));
                         }
 
                     } else {
-                        p.sendMessage(Main.PREFIX + ChatColor.RED + "Nothing changed. Broadcast was already set to " + value);
+                        p.sendMessage(Main.PREFIX.append(Component.text("Nothing changed. Broadcast was already set to " + value, NamedTextColor.RED)));
                     }
                 }).register();
 
         //Force join - OP ONLY
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("forcejoin").withRequirement(playerInRace.and(playerIsRaceOwner)).withPermission(CommandPermission.OP));
-        arguments.add(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS));
+        arguments.add(new EntitySelectorArgument.ManyEntities("players"));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
 
                     @SuppressWarnings("unchecked")
-                    Collection<Player> players = (Collection<Player>) args[0];
+                    Collection<Player> players = (Collection<Player>) args.get(0);
                     boolean onePlayerJoins = players.size() == 1;
 
-                    Race newRace = RaceManager.getRace(p.getUniqueId());
+                    Race newRace = RaceManager.getRace(p);
                     if (newRace == null) return;
 
                     for (Player player : players) {
@@ -502,23 +498,22 @@ public class Commands {
 
                         //leave old race
                         if (wPlayer.isInRace()) {
-                            Race race = RaceManager.getRace(player.getUniqueId());
+                            Race race = RaceManager.getRace(player);
                             if (race == null) continue;
 
                             //If player is race owner, disband race
                             //Otherwise leave race
                             if (race.isOwner(player.getUniqueId())) {
-                                RaceManager.disbandRace(player.getUniqueId());
-                                player.sendMessage(Main.PREFIX + "You have disbanded the race");
+                                RaceManager.disbandRace(race);
                             } else {
                                 //If already in the same race, do nothing
                                 if (newRace.getOwner().equals(race.getOwner())) {
-                                    if (onePlayerJoins)
-                                        p.sendMessage(Main.PREFIX + player.getName() + " is already in the race");
+                                    if (onePlayerJoins){
+                                        p.sendMessage(Main.PREFIX.append(Component.text(player.getName() + " is already in the race")));
+                                    }
                                     continue;
                                 }
-                                race.leavePlayer(player.getUniqueId());
-                                player.sendMessage(Main.PREFIX + "You have left the race");
+                                race.leavePlayer(player);
                             }
                         }
 
@@ -544,77 +539,82 @@ public class Commands {
                                 }, 2L);
                             }, 2L);
                         }
-
-                        player.sendMessage(Main.PREFIX + "You joined " + p.getName() + "'s race!");
                     }
                 }).register();
     }
 
-    Predicate<CommandSender> playerInRace = sender -> PlayerManager.getPlayer(((Player) sender).getUniqueId()).isInRace();
+    Predicate<CommandSender> playerInRace = sender -> {
+        if (!(sender instanceof Player)) return false;
 
-    Predicate<CommandSender> playerHasJoinableRaces = sender -> PlayerManager.getPlayer(((Player) sender).getUniqueId()).hasJoinableRace();
+        return PlayerManager.getPlayer(((Player) sender).getUniqueId()).isInRace();
+    };
 
-    Predicate<CommandSender> playerInInfectedRace = sender -> PlayerManager.getPlayer(((Player) sender).getUniqueId()).isInInfectedRace();
+    Predicate<CommandSender> playerHasJoinableRaces = sender -> {
+        if (!(sender instanceof Player)) return true;
+
+        return PlayerManager.getPlayer(((Player) sender).getUniqueId()).hasJoinableRace();
+    };
+
+    Predicate<CommandSender> playerInInfectedRace = sender -> {
+        if (!(sender instanceof Player)) return true;
+
+        return PlayerManager.getPlayer(((Player) sender).getUniqueId()).isInInfectedRace();
+    };
 
     Predicate<CommandSender> playerIsRaceOwner = sender -> {
-        Player player = (Player) sender;
-        if (player == null) return false;
+        if (!(sender instanceof Player)) return false;
 
-        Race race = RaceManager.getRace(player.getUniqueId());
+        Player player = (Player) sender;
+        if (player.isOp()) return true; //OP players count as race owner
+
+        Race race = RaceManager.getRace(player);
         if (race == null) return false;
 
         return race.isOwner(player.getUniqueId());
     };
 
     Predicate<CommandSender> raceHasStarted = sender -> {
-        Player player = (Player) sender;
-        if (player == null) return false;
+        if (!(sender instanceof Player)) return false;
 
-        Race race = RaceManager.getRace(player.getUniqueId());
+        Player player = (Player) sender;
+        Race race = RaceManager.getRace(player);
         if (race == null) return false;
 
         return race.hasStarted();
     };
 
     Predicate<CommandSender> raceIsStarting = sender -> {
-        Player player = (Player) sender;
-        if (player == null) return false;
+        if (!(sender instanceof Player)) return false;
 
-        Race race = RaceManager.getRace(player.getUniqueId());
+        Player player = (Player) sender;
+        Race race = RaceManager.getRace(player);
         if (race == null) return false;
 
         return race.isStarting();
     };
 
     Predicate<CommandSender> playerToKick = sender -> {
-        Player player = (Player) sender;
-        if (player == null) return false;
+        if (!(sender instanceof Player)) return false;
 
-        Race race = RaceManager.getRace(player.getUniqueId());
+        Player player = (Player) sender;
+        Race race = RaceManager.getRace(player);
         if (race == null) return false;
 
         return race.getPlayers().size() > 1;
     };
 
-    public void createRace(RaceMode mode, Player p) {
+    public void createRace(RaceMode mode, CommandSender sender) {
         Race race;
         switch (mode) {
             case pvp:
-                race = new PvpRace(p.getUniqueId(), p.getName());
+                race = new PvpRace(sender);
                 break;
             case infected:
-                race = new InfectedRace(p.getUniqueId(), p.getName());
+                race = new InfectedRace(sender);
                 break;
             default:
-                race = new NormalRace(p.getUniqueId(), p.getName());
+                race = new NormalRace(sender);
         }
         RaceManager.addRace(race);
-
-        TextComponent msg = new TextComponent(Main.PREFIX + "Created race! Invite players with ");
-        TextComponent click = new TextComponent(ChatColor.WHITE + "/race invite");
-        click.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/race invite "));
-        msg.addExtra(click);
-
-        p.spigot().sendMessage(msg);
     }
 }

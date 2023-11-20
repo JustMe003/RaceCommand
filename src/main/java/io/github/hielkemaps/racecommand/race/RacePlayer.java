@@ -1,15 +1,21 @@
 package io.github.hielkemaps.racecommand.race;
 
+import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
-import net.md_5.bungee.api.ChatColor;
+import me.libraryaddict.disguise.disguisetypes.DisguiseType;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import org.black_ixx.playerpoints.PlayerPoints;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class RacePlayer implements Comparable<RacePlayer> {
 
@@ -19,20 +25,15 @@ public class RacePlayer implements Comparable<RacePlayer> {
 
     private boolean isInfected = false;
     private boolean isSkeleton = false;
-    private final int skinId;
 
     private boolean finished = false;
     private int place = Integer.MAX_VALUE;
     private int time;
 
-
     public RacePlayer(Race race, UUID uuid) {
         this.race = race;
         this.uuid = uuid;
         name = Bukkit.getOfflinePlayer(uuid).getName();
-
-        //get random int from 1 to 15
-        skinId = ThreadLocalRandom.current().nextInt(1, 16);
     }
 
     public boolean isFinished() {
@@ -62,23 +63,21 @@ public class RacePlayer implements Comparable<RacePlayer> {
         return Integer.compare(this.place, o.place);
     }
 
-    @Override
-    public String toString() {
-        StringBuilder s = new StringBuilder();
+    public TextComponent getResult() {
+        TextColor color = NamedTextColor.DARK_GRAY;
 
-        if (place == 1) s.append(ChatColor.GOLD);
-        else if (place == 2) s.append(ChatColor.GRAY);
-        else if (place == 3) s.append(ChatColor.of("#a46628"));
-        else s.append(ChatColor.DARK_GRAY);
+        if (place == 1) color = NamedTextColor.GOLD;
+        else if (place == 2) color = NamedTextColor.GRAY;
+        else if (place == 3) color = TextColor.color(164, 102, 40);
 
-        s.append(ChatColor.BOLD);
-
-        if (finished) {
-            s.append(Util.ordinal(place)).append(": ").append(ChatColor.RESET).append(name).append(ChatColor.DARK_GRAY).append(" - ").append(ChatColor.GRAY).append(Util.getTimeString(time));
-        } else {
-            s.append(ChatColor.RESET).append(name).append(ChatColor.DARK_GRAY).append(" - ").append(ChatColor.GRAY).append("DNF");
+        if (!finished) {
+            return Component.text(name, NamedTextColor.WHITE)
+                    .append(Component.text(" - DNF" + Util.getTimeString(time), NamedTextColor.DARK_GRAY));
         }
-        return s.toString();
+
+        return Component.text(Util.ordinal(place) + ": ", color, TextDecoration.BOLD)
+                .append(Component.text(name, NamedTextColor.WHITE))
+                .append(Component.text(" - " + Util.getTimeString(time), NamedTextColor.GRAY));
     }
 
     public String getName() {
@@ -86,7 +85,7 @@ public class RacePlayer implements Comparable<RacePlayer> {
     }
 
     public boolean isOwner() {
-        return race.getOwner().equals(uuid);
+        return race.getOwner() != null && race.getOwner().equals(uuid);
     }
 
     public boolean isInfected() {
@@ -105,22 +104,14 @@ public class RacePlayer implements Comparable<RacePlayer> {
                 player.addAbilities();
             }
 
-            player.changeSkin(getZombieSkin());
+            player.disguiseAs(DisguiseType.ZOMBIE_VILLAGER);
             player.setMaxHealth(20);
         } else {
             isSkeleton = false;
             player.removeAbilities();
-            player.changeSkin(getVillagerSkin());
+            player.disguiseAs(DisguiseType.VILLAGER);
         }
         isInfected = value;
-    }
-
-    public String getVillagerSkin() {
-        return "villager" + skinId;
-    }
-
-    public String getZombieSkin() {
-        return "villager" + skinId + "zombie";
     }
 
     public boolean isOnline() {
@@ -137,11 +128,11 @@ public class RacePlayer implements Comparable<RacePlayer> {
         if (isOnline()) {
             PlayerWrapper p = PlayerManager.getPlayer(uuid);
             if (value) {
-                p.changeSkin("skeleton");
+                p.disguiseAs(DisguiseType.SKELETON);
                 p.hideAbilities();
                 p.skeletonTimer();
             } else if (isInfected) {
-                p.changeSkin(getZombieSkin());
+                p.disguiseAs(DisguiseType.ZOMBIE_VILLAGER);
                 p.showAbilities();
             }
         }
@@ -158,5 +149,16 @@ public class RacePlayer implements Comparable<RacePlayer> {
 
     public PlayerWrapper getWrapper() {
         return PlayerManager.getPlayer(uuid);
+    }
+
+    public void givePoints(int points) {
+        PlayerPoints.getInstance().getAPI().give(uuid, points);
+
+        Component message = Main.PREFIX
+                .append(Component.text("You won ", NamedTextColor.GRAY))
+                .append(Component.text(points, NamedTextColor.WHITE, TextDecoration.BOLD))
+                .append(Component.text(" Parcoins!", NamedTextColor.GRAY));
+
+        getPlayer().sendMessage(message);
     }
 }

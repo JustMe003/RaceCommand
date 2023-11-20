@@ -6,6 +6,14 @@ import io.github.hielkemaps.racecommand.abilities.*;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
+import me.libraryaddict.disguise.DisguiseAPI;
+import me.libraryaddict.disguise.disguisetypes.DisguiseType;
+import me.libraryaddict.disguise.disguisetypes.MobDisguise;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
@@ -13,17 +21,17 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
+import java.time.Duration;
 import java.util.*;
 
 public class PlayerWrapper {
 
     private final UUID uuid;
     private boolean inRace = false;
-    private final Set<UUID> raceInvites = new HashSet<>();
-    private boolean hasChangedSkin = false;
+    private final Set<String> raceInvites = new HashSet<>();
+    private boolean isDisguised = false;
     private double maxHealth = 20;
 
     private final List<Ability> abilities = new ArrayList<>();
@@ -48,8 +56,8 @@ public class PlayerWrapper {
         inRace = value;
 
         if (!value) {
-            if(isOnline()) getPlayer().removeScoreboardTag("inRace");
-            resetSkin();
+            if (isOnline()) getPlayer().removeScoreboardTag("inRace");
+            disableDisguise();
             removeAbilities();
             setMaxHealth(20);
             setHealth(20);
@@ -71,35 +79,41 @@ public class PlayerWrapper {
         List<String> joinable = new ArrayList<>();
 
         //Add invites
-        for (UUID uuid : raceInvites) {
-            Race race = RaceManager.getRace(uuid);
+        for (String name : raceInvites) {
+            Race race = RaceManager.getRace(name);
             if (race != null && !race.hasStarted()) {
                 joinable.add(race.getName());
             }
         }
         //Add open races
-        for (UUID uuid : RaceManager.publicRaces) {
+        for (Race race : RaceManager.getPublicRaces()) {
+            if (race.hasPlayer(uuid)) continue;
 
-            //Exclude when player is owner
-            if (!uuid.equals(this.uuid)) {
-
-                Race race = RaceManager.getRace(uuid);
-                if (race != null && !race.hasStarted()) {
-                    joinable.add(race.getName());
-                }
-            }
-
+            joinable.add(race.getName());
         }
         return joinable.toArray(new String[0]);
     }
 
-    public void addInvite(UUID sender) {
-        raceInvites.add(sender);
+    public void receiveInvite(Race race) {
+        // Update data
+        raceInvites.add(race.getName());
         updateRequirements();
+
+
+        String joinText = race.isEvent() ? "[Join]" : "Accept";
+        String inviteText = race.isEvent() ? "You have been invited to an event race! " : race.getName() + " wants to race! ";
+
+        Component msg = Main.PREFIX
+                .append(Component.text(inviteText))
+                .append(Component.text(joinText, NamedTextColor.GREEN)
+                        .clickEvent(ClickEvent.runCommand("/race join " + race.getName())));
+
+        // Send the message to the player
+        getPlayer().sendMessage(msg);
     }
 
-    public boolean acceptInvite(UUID sender) {
-        Race race = RaceManager.getRace(sender);
+    public boolean acceptInvite(String name) {
+        Race race = RaceManager.getRace(name);
         if (race == null) return false;
 
         //Join race
@@ -107,12 +121,12 @@ public class PlayerWrapper {
         race.removeInvited(uuid);
 
         //Update requirements
-        raceInvites.remove(sender);
+        raceInvites.remove(name);
         updateRequirements();
         return true;
     }
 
-    public void removeInvite(UUID from) {
+    public void removeInvite(String from) {
         raceInvites.remove(from);
     }
 
@@ -127,10 +141,7 @@ public class PlayerWrapper {
         Player p = Bukkit.getPlayer(uuid);
         if (p == null) return null;
 
-        ScoreboardManager manager = Bukkit.getServer().getScoreboardManager();
-        if (manager == null) return null;
-
-        Scoreboard scoreboard = manager.getMainScoreboard();
+        Scoreboard scoreboard = Bukkit.getServer().getScoreboardManager().getMainScoreboard();
 
         for (Team team : scoreboard.getTeams()) {
             if (team.hasEntry(p.getName())) return team;
@@ -138,26 +149,32 @@ public class PlayerWrapper {
         return null;
     }
 
-    public void resetSkin() {
-        if (isOnline() && hasChangedSkin) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "forward console skin clear " + getPlayer().getName());
-            hasChangedSkin = false;
+    public void disableDisguise() {
+        if (isOnline() && isDisguised) {
+            DisguiseAPI.getDisguise(getPlayer()).stopDisguise();
+            isDisguised = false;
         }
     }
 
-    public void changeSkin(String name) {
+    public void disguiseAs(DisguiseType type) {
         if (isOnline()) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "forward console skin set " + getPlayer().getName() + " " + name);
-            hasChangedSkin = true;
+            MobDisguise mobDisguise = new MobDisguise(type);
+            mobDisguise.setEntity(getPlayer());
+            mobDisguise.setKeepDisguiseOnPlayerDeath(true);
+            mobDisguise.setHearSelfDisguise(true);
+            mobDisguise.setViewSelfDisguise(true);
+            mobDisguise.getWatcher().setCustomName(getPlayer().getName());
+            mobDisguise.getWatcher().setCustomNameVisible(true);
+            mobDisguise.startDisguise();
+            isDisguised = true;
         }
     }
 
     public boolean isInInfectedRace() {
-        if (isInRace()) {
-            Race race = RaceManager.getRace(uuid);
-            return (race instanceof InfectedRace);
-        }
-        return false;
+        if (!isInRace()) return false;
+
+        Race race = RaceManager.getRace(getPlayer().getName());
+        return (race instanceof InfectedRace);
     }
 
     public void setMaxHealth(double value) {
@@ -169,7 +186,9 @@ public class PlayerWrapper {
         }
 
         AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        attribute.setBaseValue(value);
+        if (attribute != null) {
+            attribute.setBaseValue(value);
+        }
     }
 
     public double getMaxHealth() {
@@ -180,7 +199,7 @@ public class PlayerWrapper {
         return Bukkit.getPlayer(uuid) != null;
     }
 
-    public void sendMessage(String msg) {
+    public void sendMessage(Component msg) {
         if (isOnline()) {
             getPlayer().sendMessage(msg);
         }
@@ -195,7 +214,8 @@ public class PlayerWrapper {
         Player infected = getPlayer();
         infected.setHealth(2);
         setMaxHealth(2);
-        infected.sendTitle("", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 10, 60, 10);
+        infected.showTitle(Title.title(Component.empty(), Component.text("Healing...", NamedTextColor.RED, TextDecoration.BOLD),
+                Title.Times.times(Duration.ofMillis(500), Duration.ofMillis(3000), Duration.ofMillis(500))));
         infected.playSound(infected.getLocation(), Sound.ENTITY_SKELETON_HURT, 0.5F, 1.0F);
 
         //heal infected slowly
@@ -213,7 +233,8 @@ public class PlayerWrapper {
                     if (health == 20) {
                         endSkeleton(player);
                     } else {
-                        player.sendTitle("", org.bukkit.ChatColor.RED + "" + org.bukkit.ChatColor.BOLD + "Healing...", 0, 60, 10);
+                        player.showTitle(Title.title(Component.empty(), Component.text("Healing...", NamedTextColor.RED, TextDecoration.BOLD),
+                                Title.Times.times(Duration.ofMillis(0), Duration.ofMillis(3000), Duration.ofMillis(500))));
                         player.playSound(player.getLocation(), Sound.ENTITY_SKELETON_HURT, 0.5F, 1.0F);
                     }
                 } else {
@@ -224,11 +245,13 @@ public class PlayerWrapper {
     }
 
     private void endSkeleton(Player player) {
-        player.sendTitle(org.bukkit.ChatColor.GREEN + "" + org.bukkit.ChatColor.BOLD + "GO!", "", 0, 60, 20);
+        player.showTitle(Title.title(Component.empty(), Component.text("GO", NamedTextColor.GREEN, TextDecoration.BOLD),
+                Title.Times.times(Duration.ofMillis(0), Duration.ofMillis(3000), Duration.ofMillis(1000))));
+
         player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_AMBIENT, 1F, 1.3F);
         skeletonTimer.cancel();
 
-        Race race = RaceManager.getRace(uuid);
+        Race race = RaceManager.getRace(getPlayer().getName());
         if (race != null) {
             race.getRacePlayer(uuid).setSkeleton(false);
         }
@@ -243,7 +266,7 @@ public class PlayerWrapper {
     }
 
     public void onPlayerJoin() {
-		if (!inRace) {
+        if (!inRace) {
             removeAbilities();
         }
 

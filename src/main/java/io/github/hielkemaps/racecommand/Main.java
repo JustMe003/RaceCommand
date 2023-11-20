@@ -1,12 +1,27 @@
 package io.github.hielkemaps.racecommand;
 
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteStreams;
 import io.github.hielkemaps.racecommand.events.EventListener;
-import org.bukkit.ChatColor;
+import io.github.hielkemaps.racecommand.race.Race;
+import io.github.hielkemaps.racecommand.race.RaceManager;
+import io.github.hielkemaps.racecommand.race.types.InfectedRace;
+import io.github.hielkemaps.racecommand.race.types.NormalRace;
+import io.github.hielkemaps.racecommand.race.types.PvpRace;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.messaging.PluginMessageListener;
+import org.jetbrains.annotations.NotNull;
 
-public class Main extends JavaPlugin {
+import java.util.UUID;
+
+public class Main extends JavaPlugin implements PluginMessageListener {
 
     private static Plugin instance;
 
@@ -20,7 +35,7 @@ public class Main extends JavaPlugin {
         return instance;
     }
 
-    public static String PREFIX = ChatColor.YELLOW + "" + ChatColor.BOLD + "[RACE] " + ChatColor.RESET + "" + ChatColor.GRAY;
+    public static Component PREFIX = Component.empty().append(Component.text("[RACE] ", NamedTextColor.YELLOW, TextDecoration.BOLD));
 
     @Override
     public void onEnable() {
@@ -33,6 +48,73 @@ public class Main extends JavaPlugin {
         new Commands();
 
         //Register EventListener
-        getServer().getPluginManager().registerEvents(new EventListener(),this);
+        getServer().getPluginManager().registerEvents(new EventListener(), this);
+
+        getServer().getMessenger().registerIncomingPluginChannel(this, "hielkemaps:main", this);
+    }
+
+    @Override
+    public void onPluginMessageReceived(String channel, @NotNull Player player, byte[] bytes) {
+        getLogger().info("Messaged received!");
+
+        if (!channel.equalsIgnoreCase("hielkemaps:main")) {
+            return;
+        }
+        ByteArrayDataInput in = ByteStreams.newDataInput(bytes);
+        String subChannel = in.readUTF();
+        getLogger().info("Channel: " + subChannel);
+
+        String action = in.readUTF();
+        String args = in.readUTF();
+
+        // do things with the data
+        getLogger().info("Action: " + action);
+        getLogger().info("Args: " + args);
+
+        if (action.equals("createRace")) {
+            RaceManager.stopEvent();
+
+            String[] info = args.split("_");
+            String type = info[0];
+            int first = Integer.parseInt(info[1]);
+            int second = Integer.parseInt(info[2]);
+            int third = Integer.parseInt(info[3]);
+            int fourth = Integer.parseInt(info[4]);
+
+            Race race;
+            if (type.equals("pvp")) {
+                race = new PvpRace(getInstance().getServer().getConsoleSender());
+            } else if (type.equals("infected")) {
+                race = new InfectedRace(getInstance().getServer().getConsoleSender());
+            } else {
+                race = new NormalRace(getInstance().getServer().getConsoleSender());
+            }
+            race.setPrizes(first, second, third, fourth);
+
+            RaceManager.addRace(race);
+        }
+
+        if (action.equals("joinRace")) {
+            UUID playerUUID = UUID.fromString(args);
+            Player joiningPlayer = Bukkit.getPlayer(playerUUID);
+
+            //If player is already in server, add them
+            if (joiningPlayer != null) {
+                Race event = RaceManager.getEvent();
+                if (event == null) {
+                    joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event not found")));
+                    return;
+                }
+
+                if (!event.hasPlayer(playerUUID)) {
+                    event.addPlayer(playerUUID);
+                } else {
+                    joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("You already joined this race")));
+                }
+            } else {
+                //Else we add them to the list and add them when they join
+                EventListener.playersJoinEvent.add(playerUUID);
+            }
+        }
     }
 }

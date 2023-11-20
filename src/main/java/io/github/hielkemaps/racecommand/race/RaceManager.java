@@ -1,47 +1,73 @@
 package io.github.hielkemaps.racecommand.race;
-import java.util.*;
+
+import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class RaceManager {
 
-    public static HashMap<UUID, Race> races = new HashMap<>();
-    public static final List<UUID> publicRaces = new ArrayList<>();
+    public static List<Race> races = new ArrayList<>();
 
-    public static void addRace(Race race){
-        races.put(race.getOwner(),race);
+    public static void addRace(Race race) {
+        races.add(race);
+    }
+
+    public static Race getRace(String name) {
+        return races.stream()
+                .filter(race -> race.getName().equals(name))
+                .findFirst().orElse(null);
+    }
+
+    public static List<Race> getPublicRaces() {
+        return races.stream()
+                .filter(Race::isPublic)
+                .collect(Collectors.toList());
+    }
+
+    public static Race getRace(Player player) {
+        return getRace(player.getUniqueId());
     }
 
     public static Race getRace(UUID player) {
-        Race race = races.get(player);
-
-        //If player is owner
-        if(race != null) return race;
-
-        //Else we have to search
-        for(Race r : races.values())
-        {
-            if(r.hasPlayer(player)){
+        for (Race r : races) {
+            if (r.hasPlayer(player)) {
                 return r;
             }
         }
         return null;
     }
 
-    public static void disbandRace(UUID uniqueId) {
-        Race race = races.get(uniqueId);
-        if(race != null){
-            race.disband();
-            races.remove(uniqueId);
-        }
+    public static void disbandRace(Race race) {
+        race.disband();
+        races.remove(race);
     }
 
     public static boolean hasJoinablePublicRace(UUID uuid) {
-
-        for(UUID owner: publicRaces){
-            //If player is not owner or player in public race
-            if(!owner.equals(uuid) && !races.get(owner).hasPlayer(uuid)) {
+        for (Race race : races) {
+            if (race.isPublic() && !race.hasPlayer(uuid)) {
                 return true;
             }
         }
         return false;
+    }
+
+    public static void stopEvent() {
+        for (Race race : getPublicRaces()) {
+            if (race.isEvent()) {
+                disbandRace(race);
+            }
+        }
+    }
+
+    public static Race getEvent() {
+        for (Race race : getPublicRaces()) {
+            if (race.isEvent()) {
+                return race;
+            }
+        }
+        return null;
     }
 }
