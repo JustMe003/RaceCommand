@@ -20,11 +20,6 @@ public class NormalRace extends Race {
     }
 
     @Override
-    protected void onPlayerStart(RacePlayer racePlayer) {
-
-    }
-
-    @Override
     protected void onRaceStop() {
         //show results if any, otherwise show stop message
         if (players.stream().noneMatch(RacePlayer::isFinished)) {

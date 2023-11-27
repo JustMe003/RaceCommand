@@ -54,7 +54,7 @@ public class Commands {
 
         //START
         arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("start").withRequirement(playerInRace.and(playerIsRaceOwner).and(raceHasStarted.negate().and(raceIsStarting.negate()))));
+        arguments.add(new LiteralArgument("start").withRequirement(playerInRace.and(playerisOP.or(playerIsRaceOwner).and(raceHasStarted.negate().and(raceIsStarting.negate())))));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
@@ -67,7 +67,7 @@ public class Commands {
 
         //START COUNTDOWN
         arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("start").withRequirement(playerInRace.and(playerIsRaceOwner).and(raceHasStarted.negate().and(raceIsStarting.negate()))));
+        arguments.add(new LiteralArgument("start").withRequirement(playerInRace.and(playerisOP.or(playerIsRaceOwner).and(raceHasStarted.negate().and(raceIsStarting.negate())))));
         arguments.add(new IntegerArgument("countdown", 3, 1000));
         new CommandAPICommand("race")
                 .withArguments(arguments)
@@ -83,7 +83,7 @@ public class Commands {
 
         //STOP
         arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("stop").withRequirement(playerInRace.and(playerIsRaceOwner).and(raceHasStarted.or(raceIsStarting))));
+        arguments.add(new LiteralArgument("stop").withRequirement(playerInRace.and(playerisOP.or(playerIsRaceOwner).and(raceHasStarted.or(raceIsStarting)))));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
@@ -95,7 +95,7 @@ public class Commands {
 
         //INVITE
         arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("invite").withRequirement(playerInRace.and(playerIsRaceOwner)));
+        arguments.add(new LiteralArgument("invite").withRequirement(playerInRace.and(playerisOP.or(playerIsRaceOwner))));
         arguments.add(new PlayerArgument("player").withRequirement(sender -> !sender.isOp()).replaceSuggestions(ArgumentSuggestions.strings(info -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             List<String> names = new ArrayList<>();
@@ -189,12 +189,6 @@ public class Commands {
 
                         //OPs invitation will always go through, even if already invited
                         race.invitePlayer(invited.getUniqueId());
-                        Component text = Main.PREFIX
-                                .append(Component.text(p.getName() + " wants to race! "))
-                                .append(Component.text("[Accept]", NamedTextColor.GREEN)
-                                        .clickEvent(ClickEvent.runCommand("/race join " + race.getName())));
-
-                        invited.sendMessage(text);
                         p.sendMessage(Main.PREFIX.append(Component.text("Invited player " + invited.getName())));
                     }
                 }).register();
@@ -249,7 +243,7 @@ public class Commands {
 
         //DISBAND
         arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("disband").withRequirement(playerInRace.and(playerIsRaceOwner)));
+        arguments.add(new LiteralArgument("disband").withRequirement(playerInRace.and(playerisOP.or(playerIsRaceOwner))));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
@@ -258,7 +252,7 @@ public class Commands {
 
         //LEAVE
         arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("leave").withRequirement(playerInRace.and(playerIsRaceOwner.negate())));
+        arguments.add(new LiteralArgument("leave").withRequirement(playerInRace.and(playerisOP.or((playerIsRaceOwner.negate())))));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((p, args) -> {
@@ -476,7 +470,7 @@ public class Commands {
 
         //Force join - OP ONLY
         arguments = new ArrayList<>();
-        arguments.add(new LiteralArgument("forcejoin").withRequirement(playerInRace.and(playerIsRaceOwner)).withPermission(CommandPermission.OP));
+        arguments.add(new LiteralArgument("forcejoin").withRequirement(playerInRace.and(playerisOP.or(playerIsRaceOwner))).withPermission(CommandPermission.OP));
         arguments.add(new EntitySelectorArgument.ManyEntities("players"));
         new CommandAPICommand("race")
                 .withArguments(arguments)
@@ -561,12 +555,17 @@ public class Commands {
         return PlayerManager.getPlayer(((Player) sender).getUniqueId()).isInInfectedRace();
     };
 
+    Predicate<CommandSender> playerisOP = sender -> {
+        if (!(sender instanceof Player)) return true;
+
+        Player player = (Player) sender;
+        return player.isOp();
+    };
+
     Predicate<CommandSender> playerIsRaceOwner = sender -> {
         if (!(sender instanceof Player)) return false;
 
         Player player = (Player) sender;
-        if (player.isOp()) return true; //OP players count as race owner
-
         Race race = RaceManager.getRace(player);
         if (race == null) return false;
 

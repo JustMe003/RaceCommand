@@ -72,10 +72,11 @@ public class RacePlayer implements Comparable<RacePlayer> {
 
         if (!finished) {
             return Component.text(name, NamedTextColor.WHITE)
-                    .append(Component.text(" - DNF" + Util.getTimeString(time), NamedTextColor.DARK_GRAY));
+                    .append(Component.text(" - DNF", NamedTextColor.DARK_GRAY));
         }
 
-        return Component.text(Util.ordinal(place) + ": ", color, TextDecoration.BOLD)
+        return Component.empty()
+                .append(Component.text(Util.ordinal(place) + ": ", color, TextDecoration.BOLD))
                 .append(Component.text(name, NamedTextColor.WHITE))
                 .append(Component.text(" - " + Util.getTimeString(time), NamedTextColor.GRAY));
     }
@@ -156,7 +157,7 @@ public class RacePlayer implements Comparable<RacePlayer> {
 
         Component message = Main.PREFIX
                 .append(Component.text("You won ", NamedTextColor.GRAY))
-                .append(Component.text(points, NamedTextColor.WHITE, TextDecoration.BOLD))
+                .append(Component.text(points, TextColor.color(255, 255, 254), TextDecoration.BOLD)) //Rainbow-colored
                 .append(Component.text(" Parcoins!", NamedTextColor.GRAY));
 
         getPlayer().sendMessage(message);

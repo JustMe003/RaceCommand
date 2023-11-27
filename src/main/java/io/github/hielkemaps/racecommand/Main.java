@@ -75,11 +75,12 @@ public class Main extends JavaPlugin implements PluginMessageListener {
             RaceManager.stopEvent();
 
             String[] info = args.split("_");
-            String type = info[0];
-            int first = Integer.parseInt(info[1]);
-            int second = Integer.parseInt(info[2]);
-            int third = Integer.parseInt(info[3]);
-            int fourth = Integer.parseInt(info[4]);
+            int minutes = Integer.parseInt(info[0]);
+            String type = info[1];
+            int first = Integer.parseInt(info[2]);
+            int second = Integer.parseInt(info[3]);
+            int third = Integer.parseInt(info[4]);
+            int fourth = Integer.parseInt(info[5]);
 
             Race race;
             if (type.equals("pvp")) {
@@ -90,6 +91,10 @@ public class Main extends JavaPlugin implements PluginMessageListener {
                 race = new NormalRace(getInstance().getServer().getConsoleSender());
             }
             race.setPrizes(first, second, third, fourth);
+            race.setCountDown(minutes * 60);
+
+            race.start();
+            race.setBroadcast(true);
 
             RaceManager.addRace(race);
         }

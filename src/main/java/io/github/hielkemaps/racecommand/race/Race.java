@@ -3,15 +3,20 @@ package io.github.hielkemaps.racecommand.race;
 import dev.jorel.commandapi.CommandAPI;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
+import io.github.hielkemaps.racecommand.util.TimeConverter;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
-import org.bukkit.*;
+import net.kyori.adventure.title.Title.Times;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -54,6 +59,7 @@ public abstract class Race {
     private BukkitTask countDownStopTask;
     private BukkitTask playingTask;
     private final int[] prizes = {0, 0, 0, 0};
+    private AtomicInteger currentCountdown = new AtomicInteger(100000);
 
     public Race(CommandSender sender) {
         if (sender instanceof Player) {
@@ -79,9 +85,6 @@ public abstract class Race {
         this.isEvent = true;
         this.name = "Event";
         setIsPublic(true);
-        setCountDown(300);
-        start();
-        setBroadcast(true);
 
         // Invite all players in server
         Bukkit.getOnlinePlayers().forEach(player -> invitePlayer(player.getUniqueId()));
@@ -93,12 +96,12 @@ public abstract class Race {
 
         sendMessage(Main.PREFIX.append(Component.text("Starting race...")));
 
-        //Tp players to start
-        for (RacePlayer racePlayer : players) {
-            Player player = racePlayer.getPlayer();
-            if (player != null) {
-                player.performCommand("restart");
-                onPlayerStart(racePlayer);
+        //Teleport to start
+        if (countDown < 10) {
+            for (RacePlayer player : players) {
+                if (player.getPlayer() != null) {
+                    player.getPlayer().performCommand("restart");
+                }
             }
         }
 
@@ -113,34 +116,37 @@ public abstract class Race {
     }
 
     private BukkitTask getCountDownTask() {
-        AtomicInteger seconds = new AtomicInteger(countDown);
+        currentCountdown = new AtomicInteger(countDown);
 
         return Bukkit.getScheduler().runTaskTimer(Main.getInstance(), () -> {
             for (RacePlayer racePlayer : players) {
                 Player player = racePlayer.getPlayer();
                 if (player == null) continue;
 
-                //Always invisible during countdown
-                player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 100, 0, true, false, false));
+                TextColor color = NamedTextColor.GREEN;
+                if (currentCountdown.get() == 1) color = NamedTextColor.RED;
+                else if (currentCountdown.get() == 2) color = NamedTextColor.GOLD;
+                else if (currentCountdown.get() == 3) color = NamedTextColor.YELLOW;
 
-                StringBuilder sb = new StringBuilder();
+                //Teleport to start
+                if (currentCountdown.get() == 10) {
+                    player.performCommand("restart");
+                }
 
-                if (seconds.get() == 1) sb.append(ChatColor.RED);
-                else if (seconds.get() == 2) sb.append(ChatColor.GOLD);
-                else if (seconds.get() == 3) sb.append(ChatColor.YELLOW);
-                else if (seconds.get() > 3) sb.append(ChatColor.GREEN);
+                if (currentCountdown.get() <= 10) {
+                    //Invisible last 10 seconds
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 100, 0, true, false, false));
 
-                sb.append(ChatColor.BOLD).append(seconds);
-
-                if (seconds.get() <= 10) {
-                    player.sendTitle(" ", sb.toString(), 2, 18, 2);
+                    Times times = Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
+                    player.showTitle(Title.title(Component.empty(), Component.text(currentCountdown.toString(), color, TextDecoration.BOLD), times));
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 1);
                 } else {
-                    player.sendTitle(ChatColor.YELLOW + "Race starting in", sb.toString(), 0, 30, 0);
+                    Times times = Times.times(Duration.ofMillis(0), Duration.ofMillis(1500), Duration.ofMillis(0));
+                    player.showTitle(Title.title(Component.text("Race starting in", NamedTextColor.YELLOW), Component.text(TimeConverter.convertSecondsToTimeString(currentCountdown.get()), color, TextDecoration.BOLD), times));
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.1f, 1f);
                 }
             }
-            seconds.getAndDecrement();
+            currentCountdown.getAndDecrement();
         }, 0, 20);
     }
 
@@ -318,7 +324,7 @@ public abstract class Race {
         players.remove(racePlayer);
 
         Component leaveMessage = Main.PREFIX
-                .append(Component.text("-", NamedTextColor.RED))
+                .append(Component.text("- ", NamedTextColor.RED))
                 .append(Component.text(racePlayer.getName(), NamedTextColor.GRAY));
         sendMessageToRaceMembers(leaveMessage);
 
@@ -390,6 +396,10 @@ public abstract class Race {
         return isStarting;
     }
 
+    public int getCountDown() {
+        return currentCountdown.get();
+    }
+
     public boolean hasStarted() {
         return hasStarted;
     }
@@ -434,7 +444,8 @@ public abstract class Race {
     }
 
     public void printResults() {
-        sendMessage(Component.text("            ", NamedTextColor.GOLD, TextDecoration.STRIKETHROUGH)
+        sendMessage(Component.empty()
+                .append(Component.text("            ", NamedTextColor.GOLD, TextDecoration.STRIKETHROUGH))
                 .append(Component.text(" Results ", NamedTextColor.WHITE, TextDecoration.BOLD))
                 .append(Component.text("            ", NamedTextColor.GOLD, TextDecoration.STRIKETHROUGH)));
 
@@ -551,31 +562,29 @@ public abstract class Race {
     }
 
     public void onPlayerFinish(RacePlayer player, int place, int time) {
+        //Let players know
+        Component finishMsg = Main.PREFIX
+                .append(Component.text(player.getName() + " finished " + Util.ordinal(place) + " place!", NamedTextColor.GREEN))
+                .append(Component.text(" (" + Util.getTimeString(time) + ")", NamedTextColor.WHITE));
+        sendMessage(finishMsg);
+
         if (isEvent) {
             if (place == 1) player.givePoints(prizes[0]);
             if (place == 2) player.givePoints(prizes[1]);
             if (place == 3) player.givePoints(prizes[2]);
             if (place >= 4) player.givePoints(prizes[3]);
         }
-
-        //Let players know
-        Component finishMsg = Main.PREFIX
-                .append(Component.text(player.getName() + " finished " + Util.ordinal(place) + " place!", NamedTextColor.GREEN))
-                .append(Component.text("(" + Util.getTimeString(time) + ")", NamedTextColor.WHITE));
-        sendMessage(finishMsg);
     }
 
     public void onCountdownFinish() {
         players.stream().map(RacePlayer::getPlayer).filter(Objects::nonNull).forEach(player -> {
 
             // Show "GO" title
-            Title.Times times = Title.Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
+            Times times = Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
             player.showTitle(Title.title(Component.text(""), Component.text("GO", NamedTextColor.WHITE, TextDecoration.BOLD), times));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 2);
         });
     }
-
-    protected abstract void onPlayerStart(RacePlayer racePlayer);
 
     protected abstract void onRaceStop();
 

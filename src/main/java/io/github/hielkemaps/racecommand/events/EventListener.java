@@ -58,7 +58,6 @@ public class EventListener implements Listener {
         }
     }
 
-
     public static List<UUID> playersJoinEvent = new ArrayList<>();
 
     @EventHandler
@@ -67,13 +66,13 @@ public class EventListener implements Listener {
         UUID uuid = player.getUniqueId();
 
         //If waiting to join event, join race
-        if(playersJoinEvent.contains(uuid)){
-            for( Race race: RaceManager.getPublicRaces()){
-                if(race.isEvent()){
+        if (playersJoinEvent.contains(uuid)) {
+            for (Race race : RaceManager.getPublicRaces()) {
+                if (race.isEvent() && !race.hasStarted()) {
                     race.addPlayer(uuid);
-                    playersJoinEvent.remove(uuid);
                 }
             }
+            playersJoinEvent.remove(uuid);
         }
 
         PlayerWrapper wPlayer = PlayerManager.getPlayer(uuid);
@@ -104,7 +103,7 @@ public class EventListener implements Listener {
 
             //If not in race and there is an event race, we invite the player
             for (Race pr : RaceManager.getPublicRaces()) {
-                if (pr.isEvent()) {
+                if (pr.isEvent() && !pr.hasStarted()) {
                     pr.invitePlayer(uuid);
                 }
             }
@@ -123,8 +122,10 @@ public class EventListener implements Listener {
         if (race == null) return;
 
         //if after leaving there are no players left in the race, we disband it
-        if (!race.isEvent() && race.getOnlinePlayerCount() <= 1) {
-            RaceManager.disbandRace(race);
+        if (race.getOnlinePlayerCount() <= 1) {
+            if (race.hasStarted() || !race.isEvent()) {
+                RaceManager.disbandRace(race);
+            }
         }
 
         //if the race has not started yet and player is not owner
@@ -196,12 +197,11 @@ public class EventListener implements Listener {
         PlayerWrapper player = PlayerManager.getPlayer(e.getPlayer().getUniqueId());
 
         if (player.isInRace()) {
-
             Race race = RaceManager.getRace(e.getPlayer());
             if (race == null) return;
 
-            //Freeze players when starting race
-            if (race.isStarting()) {
+            //Freeze players in last 10 seconds of countdown
+            if (race.isStarting() && race.getCountDown() < 10) {
                 Location to = e.getFrom();
                 to.setPitch(e.getTo().getPitch());
                 to.setYaw(e.getTo().getYaw());

@@ -42,12 +42,6 @@ public class InfectedRace extends Race {
     }
 
     @Override
-    protected void onPlayerStart(RacePlayer racePlayer) {
-
-    }
-
-
-    @Override
     public void onRaceStop() {
 
         int delay = 0;
