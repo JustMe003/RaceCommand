@@ -7,6 +7,7 @@ import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.types.InfectedRace;
 import me.libraryaddict.disguise.DisguiseAPI;
+import me.libraryaddict.disguise.DisguiseConfig;
 import me.libraryaddict.disguise.disguisetypes.DisguiseType;
 import me.libraryaddict.disguise.disguisetypes.MobDisguise;
 import net.kyori.adventure.text.Component;
@@ -100,7 +101,7 @@ public class PlayerWrapper {
         updateRequirements();
 
 
-        String joinText = race.isEvent() ? "[Join]" : "Accept";
+        String joinText = race.isEvent() ? "[Join]" : "[Accept]";
         String inviteText = race.isEvent() ? "You have been invited to an event race! " : race.getName() + " wants to race! ";
 
         Component msg = Main.PREFIX
@@ -162,10 +163,11 @@ public class PlayerWrapper {
             mobDisguise.setEntity(getPlayer());
             mobDisguise.setKeepDisguiseOnPlayerDeath(true);
             mobDisguise.setHearSelfDisguise(true);
-            mobDisguise.setViewSelfDisguise(true);
+            mobDisguise.setViewSelfDisguise(false);
             mobDisguise.getWatcher().setCustomName(getPlayer().getName());
             mobDisguise.getWatcher().setCustomNameVisible(true);
             mobDisguise.startDisguise();
+            mobDisguise.setNotifyBar(DisguiseConfig.NotifyBar.NONE);
             isDisguised = true;
         }
     }
@@ -251,10 +253,12 @@ public class PlayerWrapper {
         player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_AMBIENT, 1F, 1.3F);
         skeletonTimer.cancel();
 
-        Race race = RaceManager.getRace(getPlayer().getName());
-        if (race != null) {
-            race.getRacePlayer(uuid).setSkeleton(false);
+        Race race = RaceManager.getRace(player);
+        if (race == null) {
+            Bukkit.getLogger().warning("[RaceCommand] endSkeleton called when race is null!");
+            return;
         }
+        race.getRacePlayer(uuid).setSkeleton(false);
     }
 
     public void addAbilities() {

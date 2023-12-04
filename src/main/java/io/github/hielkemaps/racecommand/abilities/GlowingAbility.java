@@ -2,6 +2,10 @@ package io.github.hielkemaps.racecommand.abilities;
 
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -21,7 +25,9 @@ public class GlowingAbility extends Ability{
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.BELL);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Show villagers");
+        itemMeta.displayName(Component.text("Make Villagers Glow")
+                .style(Style.style(TextColor.color(255, 247, 184), TextDecoration.BOLD)).decoration(TextDecoration.ITALIC,false)
+        );
         item.setItemMeta(itemMeta);
         return item;
     }

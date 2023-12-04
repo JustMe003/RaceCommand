@@ -1,5 +1,9 @@
 package io.github.hielkemaps.racecommand.abilities;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -19,7 +23,9 @@ public class SpeedAbility extends Ability {
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.SUGAR);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Speed boost");
+        itemMeta.displayName(Component.text("Speed")
+                .style(Style.style(TextColor.color(125, 233, 245), TextDecoration.BOLD)).decoration(TextDecoration.ITALIC,false)
+        );
         item.setItemMeta(itemMeta);
         return item;
     }

@@ -201,51 +201,58 @@ public class InfectedRace extends Race {
             return;
         }
 
+        //if player hits infected - 4 damage
+        if (!attacker.isInfected() && target.isInfected()) {
+            e.setCancelled(false);
+            e.setDamage(4); //for knockback
+            handlePlayerHitsInfected(e, target);
+            return;
+        }
+
         //if infected hits player - 2 damage
         if (attacker.isInfected() && !target.isInfected()) {
-            e.setDamage(0);
+            e.setCancelled(false);
+            e.setDamage(2); //for knockback
+            handleInfectedHitsPlayer(e, target);
+        }
+    }
 
-            PlayerWrapper wPlayer = target.getWrapper();
+    private void handlePlayerHitsInfected(EntityDamageByEntityEvent e, RacePlayer target) {
+        PlayerWrapper wPlayer = target.getWrapper();
 
-            double health = wPlayer.getMaxHealth() - 2;
-            wPlayer.setMaxHealth(health);
+        double health = target.getPlayer().getHealth() - 4;
+        wPlayer.setMaxHealth(health);
 
-            //spawn damage particle
-            Player bukkitPlayer = target.getPlayer();
-            Location loc = bukkitPlayer.getLocation();
-            bukkitPlayer.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, loc.getX(), loc.getY() + 1, loc.getZ(), 2, 0.1, 0.1, 0.1, 0.2);
+        Player infected = target.getPlayer();
+        infected.getWorld().playSound(infected.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_HURT, 1.0F, 1.0F);
 
-            //if player dies by the damage, turn infected
-            if (health <= 0) {
-                Player mPlayer = target.getPlayer();
+        //if infected dies, cancel event
+        if (health <= 0) {
+            onInfectedDied(target);
+            e.setCancelled(true);
+        }
+    }
 
-                mPlayer.showTitle(Title.title(Component.empty(), Component.text("You have been infected!", NamedTextColor.GREEN, TextDecoration.BOLD), Title.Times.times(Duration.ofMillis(500), Duration.ofMillis(3000), Duration.ofMillis(500))));
-                target.getRace().sendMessage(Main.PREFIX.append(Component.text(target.getName() + " got infected!")));
-                mPlayer.playSound(mPlayer.getLocation(), Sound.ENTITY_ZOMBIE_INFECT, 1.0F, 1.0F);
+    private void handleInfectedHitsPlayer(EntityDamageByEntityEvent e, RacePlayer target) {
+        PlayerWrapper wPlayer = target.getWrapper();
 
-                target.setInfected(true);
-            } else {
+        double health = wPlayer.getMaxHealth() - 2;
+        wPlayer.setMaxHealth(health);
 
-                //fix health if over max health
-                if (bukkitPlayer.getHealth() > wPlayer.getMaxHealth()) {
-                    target.getPlayer().setHealth(health);
-                }
-            }
-        } else if (!attacker.isInfected() && target.isInfected()) {
-            e.setDamage(0);
+        //spawn damage particle
+        Player bukkitPlayer = target.getPlayer();
+        Location loc = bukkitPlayer.getLocation();
+        bukkitPlayer.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, loc.getX(), loc.getY() + 1, loc.getZ(), 2, 0.1, 0.1, 0.1, 0.2);
 
-            double health = target.getPlayer().getHealth() - 4;
-            Player infected = target.getPlayer();
-            infected.getWorld().playSound(infected.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_HURT, 1.0F, 1.0F);
+        //if player dies by the damage, turn infected
+        if (health <= 0) {
+            Player mPlayer = target.getPlayer();
 
-            //if infected dies, cancel
-            if (health <= 0) {
-                onInfectedDied(target);
-                e.setCancelled(true);
-            } else {
-                target.getPlayer().setHealth(health);
-            }
-        } else {
+            mPlayer.showTitle(Title.title(Component.empty(), Component.text("You have been infected!", NamedTextColor.GREEN, TextDecoration.BOLD), Title.Times.times(Duration.ofMillis(500), Duration.ofMillis(3000), Duration.ofMillis(500))));
+            target.getRace().sendMessage(Main.PREFIX.append(Component.text(target.getName() + " got infected!")));
+            mPlayer.playSound(mPlayer.getLocation(), Sound.ENTITY_ZOMBIE_INFECT, 1.0F, 1.0F);
+            target.setInfected(true);
+
             e.setCancelled(true);
         }
     }

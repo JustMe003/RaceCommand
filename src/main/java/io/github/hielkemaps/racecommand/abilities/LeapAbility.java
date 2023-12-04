@@ -1,5 +1,9 @@
 package io.github.hielkemaps.racecommand.abilities;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -19,7 +23,9 @@ public class LeapAbility extends Ability{
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.FEATHER);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Leap");
+        itemMeta.displayName(Component.text("Leap")
+                .style(Style.style(TextColor.color(177, 255, 140), TextDecoration.BOLD)).decoration(TextDecoration.ITALIC,false)
+        );
         item.setItemMeta(itemMeta);
         return item;
     }

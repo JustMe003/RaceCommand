@@ -2,6 +2,10 @@ package io.github.hielkemaps.racecommand.abilities;
 
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -26,7 +30,9 @@ public class BlindAbility extends Ability {
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.INK_SAC);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Blind nearby villagers");
+        itemMeta.displayName(Component.text("Blind nearby Villagers")
+                .style(Style.style(TextColor.color(82, 82, 82), TextDecoration.BOLD).decoration(TextDecoration.ITALIC,false))
+        );
         item.setItemMeta(itemMeta);
         return item;
     }

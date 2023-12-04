@@ -162,7 +162,6 @@ public abstract class Race {
                 isStarting = false;
                 hasStarted = true;
             }
-
             onCountdownFinish();
 
             sendMessage(Main.PREFIX.append(Component.text("Race has started")));

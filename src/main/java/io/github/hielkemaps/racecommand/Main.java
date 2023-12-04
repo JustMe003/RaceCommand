@@ -111,11 +111,17 @@ public class Main extends JavaPlugin implements PluginMessageListener {
                     return;
                 }
 
-                if (!event.hasPlayer(playerUUID)) {
-                    event.addPlayer(playerUUID);
-                } else {
-                    joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("You already joined this race")));
+                if(event.hasStarted()){
+                    joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event already started! :(")));
+                    return;
                 }
+
+                if (event.hasPlayer(playerUUID)) {
+                    joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("You already joined this race")));
+                    return;
+                }
+
+                event.addPlayer(playerUUID);
             } else {
                 //Else we add them to the list and add them when they join
                 EventListener.playersJoinEvent.add(playerUUID);

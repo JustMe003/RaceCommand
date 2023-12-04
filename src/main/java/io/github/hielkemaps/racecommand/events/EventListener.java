@@ -138,56 +138,62 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent e) {
-
         //If player damages another player
         if (e.getDamager() instanceof Player && e.getEntity() instanceof Player) {
-            Player player = (Player) e.getEntity();
-            UUID attacker = e.getDamager().getUniqueId();
-
-            Race playerRace = RaceManager.getRace(player);
-            if (playerRace != null) {
-
-                //If both players are in the same race
-                // and race has started
-                if (playerRace.hasPlayer(attacker) && playerRace.hasStarted()) {
-                    RacePlayer racePlayer = playerRace.getRacePlayer(player.getUniqueId());
-                    RacePlayer raceAttacker = playerRace.getRacePlayer(attacker);
-
-                    //if both players are ingame
-                    if (!racePlayer.isFinished() && !raceAttacker.isFinished()) {
-                        playerRace.onPlayerDamagedByPlayer(e, racePlayer, raceAttacker);
-                        return;
-                    }
-                }
-            }
-            e.setCancelled(true); //disable pvp
+            e.setCancelled(true);
+            handlePlayerDamage(e);
         }
 
-        //Arrow detection
+        //If arrow damages player
         if (e.getEntity() instanceof Player && e.getDamager() instanceof Arrow) {
-            Arrow arrow = (Arrow) e.getDamager();
+            handleArrowDamage(e);
+        }
+    }
 
-            if (arrow.getScoreboardTags().contains("raceplugin")) {
+    private void handleArrowDamage(EntityDamageByEntityEvent e) {
+        Arrow arrow = (Arrow) e.getDamager();
 
-                Player player = (Player) e.getEntity();
-                PlayerWrapper p = PlayerManager.getPlayer(player.getUniqueId());
-                if (p.isInInfectedRace()) {
-                    Race race = RaceManager.getRace(player);
-                    RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
-                    if (!racePlayer.isInfected()) {
+        if (!arrow.getScoreboardTags().contains("raceplugin")) return;
 
-                        for (String scoreboardTag : arrow.getScoreboardTags()) {
-                            if (scoreboardTag.startsWith("race_")) {
-                                String id = scoreboardTag.substring(5);
-                                if (id.equals(race.getId().toString())) {
-                                    e.setCancelled(false); //allow damage
-                                    return;
-                                }
-                            }
-                        }
-                    }
+        e.setCancelled(true);
+        Player player = (Player) e.getEntity();
+
+        Race race = RaceManager.getRace(player);
+        if (race == null || !race.getType().equals("§2Infected")) return;
+
+        RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
+
+        //Infected players can not be damaged by arrows
+        if (racePlayer.isInfected()) return;
+
+        for (String scoreboardTag : arrow.getScoreboardTags()) {
+            if (scoreboardTag.startsWith("race_")) {
+                String id = scoreboardTag.substring(5);
+                if (id.equals(race.getId().toString())) {
+                    e.setDamage(1);
+                    e.setCancelled(false); //allow damage
+                    return;
                 }
-                e.setCancelled(true);
+            }
+        }
+    }
+
+    private void handlePlayerDamage(EntityDamageByEntityEvent e) {
+        Player player = (Player) e.getEntity();
+        UUID attacker = e.getDamager().getUniqueId();
+
+        Race playerRace = RaceManager.getRace(player);
+        if (playerRace == null) return;
+
+        //If both players are in the same race
+        // and race has started
+        if (playerRace.hasPlayer(attacker) && playerRace.hasStarted()) {
+            RacePlayer racePlayer = playerRace.getRacePlayer(player.getUniqueId());
+            RacePlayer raceAttacker = playerRace.getRacePlayer(attacker);
+
+            //if both players are ingame
+            if (!racePlayer.isFinished() && !raceAttacker.isFinished()) {
+                playerRace.onPlayerDamagedByPlayer(e, racePlayer, raceAttacker);
             }
         }
     }

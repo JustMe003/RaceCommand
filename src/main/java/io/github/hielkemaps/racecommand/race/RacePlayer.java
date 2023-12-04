@@ -125,19 +125,20 @@ public class RacePlayer implements Comparable<RacePlayer> {
 
     public void setSkeleton(boolean value) {
         if (isSkeleton == value) return;
+        isSkeleton = value;
 
         if (isOnline()) {
-            PlayerWrapper p = PlayerManager.getPlayer(uuid);
-            if (value) {
+            PlayerWrapper p = getWrapper();
+            if (isSkeleton) {
                 p.disguiseAs(DisguiseType.SKELETON);
                 p.hideAbilities();
                 p.skeletonTimer();
-            } else if (isInfected) {
-                p.disguiseAs(DisguiseType.ZOMBIE_VILLAGER);
-                p.showAbilities();
+                return;
             }
+
+            p.disguiseAs(DisguiseType.ZOMBIE_VILLAGER);
+            p.showAbilities();
         }
-        isSkeleton = value;
     }
 
     public int getPlace() {

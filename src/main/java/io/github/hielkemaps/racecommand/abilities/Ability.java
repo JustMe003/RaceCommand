@@ -132,14 +132,8 @@ public abstract class Ability {
 
     public void show() {
         isHidden = false;
-
-        if (activateTask == null) {
-            updateInventory(item);
-        } else if (activateTask.isCancelled()) {
-            updateInventory(item);
-        }
+        updateInventory(item);
     }
-
 
     public void onPlayerJoin() {
         queuedItems.forEach((integer, itemStack) -> getPlayer().getInventory().setItem(integer, itemStack));

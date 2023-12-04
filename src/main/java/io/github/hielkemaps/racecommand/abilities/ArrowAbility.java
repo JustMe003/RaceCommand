@@ -1,5 +1,10 @@
 package io.github.hielkemaps.racecommand.abilities;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.ComponentBuilder;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Arrow;
@@ -18,7 +23,9 @@ public class ArrowAbility extends Ability {
     private static ItemStack item() {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName("Shoot infected");
+        itemMeta.displayName(Component.text("Shoot Infected")
+                .style(Style.style(TextColor.color(117, 78, 48), TextDecoration.BOLD).decoration(TextDecoration.ITALIC,false))
+        );
         item.setItemMeta(itemMeta);
         return item;
     }
