@@ -38,7 +38,8 @@ public class InfectedRace extends Race {
 
     public InfectedRace(CommandSender sender) {
         super(sender);
-        type = "§2Infected";
+        type = "infected";
+        formattedType = "§2Infected";
     }
 
     @Override

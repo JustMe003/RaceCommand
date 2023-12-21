@@ -16,7 +16,8 @@ public class PvpRace extends Race {
 
     public PvpRace(CommandSender sender) {
         super(sender);
-        type = "§bPvP";
+        type = "pvp";
+        formattedType = "§bPvP";
     }
 
     @Override

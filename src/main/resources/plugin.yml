@@ -3,4 +3,4 @@ main: io.github.hielkemaps.racecommand.Main
 version: 1.0.8
 authors: [Hielke]
 api-version: 1.20
-depend: [CommandAPI,PlayerPoints, LibsDisguises]
+depend: [CommandAPI,PlayerPoints, LibsDisguises, HielkeAPI]

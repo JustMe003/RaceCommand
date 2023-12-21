@@ -16,7 +16,8 @@ public class NormalRace extends Race {
 
     public NormalRace(CommandSender sender) {
         super(sender);
-        type = "§7Normal";
+        type = "normal";
+        formattedType = "§7Normal";
     }
 
     @Override

@@ -1,6 +1,7 @@
 package io.github.hielkemaps.racecommand.race;
 
 import dev.jorel.commandapi.CommandAPI;
+import io.github.hielkemaps.hielkeapi.HielkeAPI;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
 import io.github.hielkemaps.racecommand.util.TimeConverter;
@@ -44,6 +45,7 @@ public abstract class Race {
     private boolean hasStarted = false;
     private final Set<UUID> InvitedPlayers = new HashSet<>();
     protected String type;
+    protected String formattedType;
     private int place = 1;
 
     //options
@@ -227,6 +229,7 @@ public abstract class Race {
 
         onPlayerFinish(racePlayer, place, time);
         racePlayer.setFinished(true, place, time);
+        HielkeAPI.onPlayerFinishedRace(player, type, place, time, isEvent);
 
         place++;
     }
@@ -611,8 +614,8 @@ public abstract class Race {
         return isEvent;
     }
 
-    public String getType() {
-        return type;
+    public String getTypeString() {
+        return formattedType;
     }
 
     public void setPrizes(int first, int second, int third, int fourth) {

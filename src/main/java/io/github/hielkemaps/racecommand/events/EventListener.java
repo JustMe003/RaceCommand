@@ -159,7 +159,7 @@ public class EventListener implements Listener {
         Player player = (Player) e.getEntity();
 
         Race race = RaceManager.getRace(player);
-        if (race == null || !race.getType().equals("§2Infected")) return;
+        if (race == null || !race.getTypeString().equals("§2Infected")) return;
 
         RacePlayer racePlayer = race.getRacePlayer(player.getUniqueId());
 

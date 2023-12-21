@@ -14,7 +14,6 @@ import io.github.hielkemaps.racecommand.race.types.PvpRace;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -280,7 +279,7 @@ public class Commands {
                         p.sendMessage(ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           " + ChatColor.RESET + "" + ChatColor.BOLD + " " + ownerName + "'s race " + ChatColor.GOLD + "" + ChatColor.STRIKETHROUGH + "           ");
                     }
                     p.sendMessage("Visibility: " + (race.isPublic() ? ChatColor.GREEN + "Public" : ChatColor.RED + "Private"));
-                    p.sendMessage("Type: " + race.getType());
+                    p.sendMessage("Type: " + race.getTypeString());
                     p.sendMessage("Players:");
 
                     for (RacePlayer racePlayer : race.getPlayers()) {

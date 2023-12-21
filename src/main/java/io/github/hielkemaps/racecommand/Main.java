@@ -2,6 +2,7 @@ package io.github.hielkemaps.racecommand;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
+import io.github.hielkemaps.hielkeapi.HielkeAPI;
 import io.github.hielkemaps.racecommand.events.EventListener;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
@@ -44,6 +45,8 @@ public class Main extends JavaPlugin implements PluginMessageListener {
         FileConfiguration config = getConfig();
         startFunction = config.getString("start-function");
 
+        HielkeAPI hielkeAPI;
+
         //Register commands
         new Commands();
 
@@ -55,8 +58,6 @@ public class Main extends JavaPlugin implements PluginMessageListener {
 
     @Override
     public void onPluginMessageReceived(String channel, @NotNull Player player, byte[] bytes) {
-        getLogger().info("Messaged received!");
-
         if (!channel.equalsIgnoreCase("hielkemaps:main")) {
             return;
         }
@@ -68,9 +69,6 @@ public class Main extends JavaPlugin implements PluginMessageListener {
         String args = in.readUTF();
 
         // do things with the data
-        getLogger().info("Action: " + action);
-        getLogger().info("Args: " + args);
-
         if (action.equals("createRace")) {
             RaceManager.stopEvent();
 
