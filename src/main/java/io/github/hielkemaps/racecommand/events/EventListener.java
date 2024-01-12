@@ -1,17 +1,13 @@
 package io.github.hielkemaps.racecommand.events;
 
 import dev.jorel.commandapi.CommandAPI;
-import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.abilities.Ability;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
 import io.github.hielkemaps.racecommand.race.RacePlayer;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -281,25 +277,13 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent e) {
-        if (e.getEntity() instanceof Arrow) {
-            Arrow arrow = (Arrow) e.getEntity();
+        if (e.getEntity() instanceof Arrow arrow) {
 
             if (arrow.getScoreboardTags().contains("raceplugin")) {
                 if (e.getHitBlock() != null) {
                     arrow.remove();
                 }
             }
-        }
-
-        if (e.getHitBlock() != null && e.getHitBlock().getType() == Material.CHORUS_FLOWER) {
-            BlockData data = e.getHitBlock().getBlockData();
-            e.getEntity().remove();
-            e.getHitBlock().setType(Material.AIR);
-
-            Bukkit.getScheduler().runTask(Main.getInstance(), () -> {
-                e.getHitBlock().setType(Material.CHORUS_FLOWER);
-                e.getHitBlock().setBlockData(data);
-            });
         }
     }
 }

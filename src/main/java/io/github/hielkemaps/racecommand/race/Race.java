@@ -1,7 +1,6 @@
 package io.github.hielkemaps.racecommand.race;
 
 import dev.jorel.commandapi.CommandAPI;
-import io.github.hielkemaps.hielkeapi.HielkeAPI;
 import io.github.hielkemaps.racecommand.Main;
 import io.github.hielkemaps.racecommand.Util;
 import io.github.hielkemaps.racecommand.util.TimeConverter;
@@ -64,8 +63,7 @@ public abstract class Race {
     private AtomicInteger currentCountdown = new AtomicInteger(100000);
 
     public Race(CommandSender sender) {
-        if (sender instanceof Player) {
-            Player player = (Player) sender;
+        if (sender instanceof Player player) {
             this.name = sender.getName();
             this.owner = player.getUniqueId();
 
@@ -179,7 +177,10 @@ public abstract class Race {
         //stop race if everyone has finished
         if (players.stream().allMatch(RacePlayer::isFinished)) {
             stop();
-            sendMessage(Main.PREFIX.append(Component.text("Race has ended")));
+
+            // Disband race if event, otherwise it will stay there and invite joining players
+            if (isEvent) disband();
+            else sendMessage(Main.PREFIX.append(Component.text("Race has ended")));
         }
 
         for (RacePlayer racePlayer : players) {
@@ -229,7 +230,7 @@ public abstract class Race {
 
         onPlayerFinish(racePlayer, place, time);
         racePlayer.setFinished(true, place, time);
-        HielkeAPI.onPlayerFinishedRace(player, type, place, time, isEvent);
+        //HielkeAPI.onPlayerFinishedRace(player, type, place, time, isEvent);
 
         place++;
     }
@@ -262,6 +263,7 @@ public abstract class Race {
         }
 
         onRaceStop();
+
         cancelTasks();
         isStarting = false;
         hasStarted = false;

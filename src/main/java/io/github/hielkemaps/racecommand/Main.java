@@ -2,7 +2,6 @@ package io.github.hielkemaps.racecommand;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
-import io.github.hielkemaps.hielkeapi.HielkeAPI;
 import io.github.hielkemaps.racecommand.events.EventListener;
 import io.github.hielkemaps.racecommand.race.Race;
 import io.github.hielkemaps.racecommand.race.RaceManager;
@@ -44,8 +43,6 @@ public class Main extends JavaPlugin implements PluginMessageListener {
         saveDefaultConfig();
         FileConfiguration config = getConfig();
         startFunction = config.getString("start-function");
-
-        HielkeAPI hielkeAPI;
 
         //Register commands
         new Commands();

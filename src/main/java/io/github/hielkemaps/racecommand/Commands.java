@@ -37,7 +37,7 @@ public class Commands {
         //CREATE
         List<Argument<?>> arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("create").withRequirement(playerInRace.negate()));
-        arguments.add(new MultiLiteralArgument(RaceMode.getNames(RaceMode.class)));
+        arguments.add(new MultiLiteralArgument("type", RaceMode.getNames(RaceMode.class)));
         new CommandAPICommand("race")
                 .withArguments(arguments)
                 .executesPlayer((sender, args) -> {
@@ -501,7 +501,7 @@ public class Commands {
                             } else {
                                 //If already in the same race, do nothing
                                 if (newRace.getOwner().equals(race.getOwner())) {
-                                    if (onePlayerJoins){
+                                    if (onePlayerJoins) {
                                         p.sendMessage(Main.PREFIX.append(Component.text(player.getName() + " is already in the race")));
                                     }
                                     continue;
