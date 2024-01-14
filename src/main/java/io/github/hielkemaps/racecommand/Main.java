@@ -67,60 +67,72 @@ public class Main extends JavaPlugin implements PluginMessageListener {
 
         // do things with the data
         if (action.equals("createRace")) {
-            RaceManager.stopEvent();
-
-            String[] info = args.split("_");
-            int minutes = Integer.parseInt(info[0]);
-            String type = info[1];
-            int first = Integer.parseInt(info[2]);
-            int second = Integer.parseInt(info[3]);
-            int third = Integer.parseInt(info[4]);
-            int fourth = Integer.parseInt(info[5]);
-
-            Race race;
-            if (type.equals("pvp")) {
-                race = new PvpRace(getInstance().getServer().getConsoleSender());
-            } else if (type.equals("infected")) {
-                race = new InfectedRace(getInstance().getServer().getConsoleSender());
-            } else {
-                race = new NormalRace(getInstance().getServer().getConsoleSender());
-            }
-            race.setPrizes(first, second, third, fourth);
-            race.setCountDown(minutes * 60);
-
-            race.start();
-            race.setBroadcast(true);
-
-            RaceManager.addRace(race);
+            createEventRace(args);
         }
 
         if (action.equals("joinRace")) {
-            UUID playerUUID = UUID.fromString(args);
-            Player joiningPlayer = Bukkit.getPlayer(playerUUID);
-
-            //If player is already in server, add them
-            if (joiningPlayer != null) {
-                Race event = RaceManager.getEvent();
-                if (event == null) {
-                    joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event not found")));
-                    return;
-                }
-
-                if(event.hasStarted()){
-                    joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event already started! :(")));
-                    return;
-                }
-
-                if (event.hasPlayer(playerUUID)) {
-                    joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("You already joined this race")));
-                    return;
-                }
-
-                event.addPlayer(playerUUID);
-            } else {
-                //Else we add them to the list and add them when they join
-                EventListener.playersJoinEvent.add(playerUUID);
-            }
+            joinEventRace(args);
         }
+
+        if (action.equals("deleteRace")) {
+            RaceManager.stopEvent();
+        }
+    }
+
+    private void joinEventRace(String args) {
+        UUID playerUUID = UUID.fromString(args);
+        Player joiningPlayer = Bukkit.getPlayer(playerUUID);
+
+        //If player is already in server, add them
+        if (joiningPlayer != null) {
+            Race event = RaceManager.getEvent();
+            if (event == null) {
+                joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event not found")));
+                return;
+            }
+
+            if (event.hasStarted()) {
+                joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event already started! :(")));
+                return;
+            }
+
+            if (event.hasPlayer(playerUUID)) {
+                joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("You already joined this race")));
+                return;
+            }
+
+            event.addPlayer(playerUUID);
+        } else {
+            //Else we add them to the list and add them when they join
+            EventListener.playersJoinEvent.add(playerUUID);
+        }
+    }
+
+    private void createEventRace(String args) {
+        RaceManager.stopEvent();
+
+        String[] info = args.split("_");
+        int minutes = Integer.parseInt(info[0]);
+        String type = info[1];
+        int first = Integer.parseInt(info[2]);
+        int second = Integer.parseInt(info[3]);
+        int third = Integer.parseInt(info[4]);
+        int fourth = Integer.parseInt(info[5]);
+
+        Race race;
+        if (type.equals("pvp")) {
+            race = new PvpRace(getInstance().getServer().getConsoleSender());
+        } else if (type.equals("infected")) {
+            race = new InfectedRace(getInstance().getServer().getConsoleSender());
+        } else {
+            race = new NormalRace(getInstance().getServer().getConsoleSender());
+        }
+        race.setPrizes(first, second, third, fourth);
+        race.setCountDown(minutes * 60);
+
+        race.start();
+        race.setBroadcast(true);
+
+        RaceManager.addRace(race);
     }
 }

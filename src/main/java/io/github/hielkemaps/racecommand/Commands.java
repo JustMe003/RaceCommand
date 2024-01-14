@@ -218,7 +218,7 @@ public class Commands {
                     return;
                 }
 
-                //If player in existing race
+                //If player in existing race, leave
                 if (wPlayer.isInRace()) {
                     Race raceToLeave = RaceManager.getRace(p);
 
