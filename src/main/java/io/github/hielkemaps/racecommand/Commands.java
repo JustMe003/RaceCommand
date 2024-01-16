@@ -61,7 +61,7 @@ public class Commands {
                     Race race = RaceManager.getRace(p);
                     if (race == null) return;
 
-                    race.start();
+                    race.startCountdown(0);
                 }).register();
 
         //START COUNTDOWN
@@ -77,7 +77,7 @@ public class Commands {
                     if (race == null) return;
 
                     race.setCountDown(value);
-                    race.start();
+                    race.startCountdown(0);
                 }).register();
 
         //STOP
@@ -228,7 +228,7 @@ public class Commands {
                         if (raceOwner.equals(p.getUniqueId())) {
                             RaceManager.disbandRace(raceToLeave);
                         } else {
-                            raceToLeave.leavePlayer(p);
+                            raceToLeave.removePlayer(p);
                         }
                     }
                 }
@@ -257,7 +257,7 @@ public class Commands {
                 .executesPlayer((p, args) -> {
                     Race race = RaceManager.getRace(p);
                     if (race != null) {
-                        race.leavePlayer(p);
+                        race.removePlayer(p);
                     }
                 }).register();
 
@@ -506,7 +506,7 @@ public class Commands {
                                     }
                                     continue;
                                 }
-                                race.leavePlayer(player);
+                                race.removePlayer(player);
                             }
                         }
 

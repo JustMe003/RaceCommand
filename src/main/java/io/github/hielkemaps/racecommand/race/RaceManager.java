@@ -45,6 +45,15 @@ public class RaceManager {
         races.remove(race);
     }
 
+    public static void DisbandOrLeaveRace(UUID uuid) {
+        for (Race race : races) {
+            if (race.hasPlayer(uuid)) {
+                if (race.isOwner(uuid)) disbandRace(race);
+                else race.removePlayerSilent(uuid);
+            }
+        }
+    }
+
     public static boolean hasJoinablePublicRace(UUID uuid) {
         for (Race race : races) {
             if (race.isPublic() && !race.hasPlayer(uuid)) {

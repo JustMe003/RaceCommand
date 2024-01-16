@@ -60,18 +60,26 @@ public class EventListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player player = e.getPlayer();
         UUID uuid = player.getUniqueId();
+        PlayerWrapper wPlayer = PlayerManager.getPlayer(uuid);
 
         //If waiting to join event, join race
         if (playersJoinEvent.contains(uuid)) {
+            playersJoinEvent.remove(uuid);
+
+            // If player already in race
+            Race currentRace = RaceManager.getRace(uuid);
+            if (currentRace != null) {
+                if (currentRace.isEvent()) return; // If already in event race, we don't have to add the player again
+                RaceManager.DisbandOrLeaveRace(uuid);  //Disband current race if owner, or leave it
+            }
+
             for (Race race : RaceManager.getPublicRaces()) {
                 if (race.isEvent() && !race.hasStarted()) {
                     race.addPlayer(uuid);
                 }
             }
-            playersJoinEvent.remove(uuid);
         }
 
-        PlayerWrapper wPlayer = PlayerManager.getPlayer(uuid);
         wPlayer.onPlayerJoin();
 
         //Remove inRace tag if player is not in current active race
@@ -126,7 +134,7 @@ public class EventListener implements Listener {
 
         //if the race has not started yet and player is not owner
         if (!race.hasStarted() && !race.isOwner(player.getUniqueId())) {
-            race.leavePlayer(player); //player leaves the race if it hasn't started yet
+            race.removePlayer(player); //player leaves the race if it hasn't started yet
         }
 
         race.onPlayerQuit(e, race.getRacePlayer(e.getPlayer().getUniqueId()));

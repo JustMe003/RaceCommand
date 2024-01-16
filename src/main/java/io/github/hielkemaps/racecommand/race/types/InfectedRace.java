@@ -71,7 +71,7 @@ public class InfectedRace extends Race {
     }
 
     @Override
-    public void onCountdownFinish() {
+    public void onRaceStart() {
 
         //set first infected
         if (firstInfected == null || !firstInfected.isOnline() || randomFirstInfected) {
@@ -275,7 +275,7 @@ public class InfectedRace extends Race {
             //If leaving player is the owner, ignore
             if (racePlayer.isOwner()) return;
 
-            leavePlayer(racePlayer.getPlayer());
+            removePlayer(racePlayer.getPlayer());
         }
     }
 

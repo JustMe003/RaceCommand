@@ -19,7 +19,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class Main extends JavaPlugin implements PluginMessageListener {
 
@@ -60,8 +64,6 @@ public class Main extends JavaPlugin implements PluginMessageListener {
         }
         ByteArrayDataInput in = ByteStreams.newDataInput(bytes);
         String subChannel = in.readUTF();
-        getLogger().info("Channel: " + subChannel);
-
         String action = in.readUTF();
         String args = in.readUTF();
 
@@ -83,36 +85,51 @@ public class Main extends JavaPlugin implements PluginMessageListener {
         UUID playerUUID = UUID.fromString(args);
         Player joiningPlayer = Bukkit.getPlayer(playerUUID);
 
-        //If player is already in server, add them
-        if (joiningPlayer != null) {
-            Race event = RaceManager.getEvent();
-            if (event == null) {
-                joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event not found")));
-                return;
-            }
+        //If player has yet to join the event
+        if (joiningPlayer == null) {
+            EventListener.playersJoinEvent.add(playerUUID);    // Add them to the list and add them when they join
+            return;
+        }
 
-            if (event.hasStarted()) {
-                joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event already started! :(")));
-                return;
-            }
-
-            if (event.hasPlayer(playerUUID)) {
+        // If player already in race
+        Race currentRace = RaceManager.getRace(playerUUID);
+        if (currentRace != null) {
+            if (currentRace.isEvent()) {
                 joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("You already joined this race")));
                 return;
             }
-
-            event.addPlayer(playerUUID);
-        } else {
-            //Else we add them to the list and add them when they join
-            EventListener.playersJoinEvent.add(playerUUID);
+            RaceManager.DisbandOrLeaveRace(playerUUID);  //Disband current race if owner, or leave it
         }
+
+        Race event = RaceManager.getEvent();
+        if (event == null) {
+            joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event not found")));
+            return;
+        }
+
+        if (event.hasStarted()) {
+            joiningPlayer.sendMessage(Main.PREFIX.append(Component.text("Event already started! :(")));
+            return;
+        }
+        event.addPlayer(playerUUID);
     }
 
     private void createEventRace(String args) {
         RaceManager.stopEvent();
 
         String[] info = args.split("_");
-        int minutes = Integer.parseInt(info[0]);
+        LocalTime startTime = LocalTime.parse(info[0]);
+        LocalTime currentTime = LocalTime.now(ZoneOffset.UTC);
+        
+        long timeToStart = ChronoUnit.NANOS.between(currentTime, startTime);
+        int seconds = (int) TimeUnit.NANOSECONDS.toSeconds(timeToStart);
+        long remainingNanos = timeToStart - TimeUnit.SECONDS.toNanos(seconds);
+
+        //Don't create race created for the past, don't.
+        if (timeToStart < 0) {
+            return;
+        }
+
         String type = info[1];
         int first = Integer.parseInt(info[2]);
         int second = Integer.parseInt(info[3]);
@@ -128,11 +145,17 @@ public class Main extends JavaPlugin implements PluginMessageListener {
             race = new NormalRace(getInstance().getServer().getConsoleSender());
         }
         race.setPrizes(first, second, third, fourth);
-        race.setCountDown(minutes * 60);
 
-        race.start();
+        race.setCountDown(seconds);
+        race.startCountdown(remainingNanos);
+
         race.setBroadcast(true);
-
         RaceManager.addRace(race);
+
+        // Invite all players in server
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (EventListener.playersJoinEvent.contains(player.getUniqueId())) continue;
+            race.invitePlayer(player.getUniqueId());
+        }
     }
 }

@@ -6,7 +6,7 @@
 
     <groupId>io.github.hielkemaps</groupId>
     <artifactId>RaceCommand</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.1</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -57,7 +57,7 @@
     </repositories>
 
     <build>
-        <finalName>${project.artifactId}</finalName>
+        <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -100,7 +100,6 @@
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
-
                         <configuration>
                             <outputDirectory>C:\Users\Hielk\Documents\GitHub\MinecraftServer\network\parkour-spiral\plugins
                             </outputDirectory>
@@ -108,7 +107,7 @@
                                 <resource>
                                     <directory>/target</directory>
                                     <includes>
-                                        <include>${project.artifactId}.jar</include>
+                                        <include>${project.artifactId}-${project.version}.jar</include>
                                     </includes>
                                 </resource>
                             </resources>

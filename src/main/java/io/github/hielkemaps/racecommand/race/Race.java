@@ -85,16 +85,11 @@ public abstract class Race {
         this.isEvent = true;
         this.name = "Event";
         setIsPublic(true);
-
-        // Invite all players in server
-        Bukkit.getOnlinePlayers().forEach(player -> invitePlayer(player.getUniqueId()));
     }
 
-    public void start() {
+    public void startCountdown(long delay) {
         place = 1;
         isStarting = true;
-
-        sendMessage(Main.PREFIX.append(Component.text("Starting race...")));
 
         //Teleport to start
         if (countDown < 10) {
@@ -105,67 +100,76 @@ public abstract class Race {
             }
         }
 
-        //Countdown task
-        countDownTask = getCountDownTask();
+        //Start countdown
+        currentCountdown = new AtomicInteger(countDown);
+        countDownTask = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), this::countdown, 0, 20);
 
-        //Stop countdown task
-        countDownStopTask = getStopTask();
+        //Start race task
+        countDownStopTask = Bukkit.getScheduler().runTaskLater(Main.getInstance(), this::start, 20L * countDown);
 
-        playingTask = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), this::tick, countDown * 20L, 1);
         updateRequirements();
     }
 
-    private BukkitTask getCountDownTask() {
-        currentCountdown = new AtomicInteger(countDown);
+    private void countdown() {
+        for (RacePlayer racePlayer : players) {
+            Player player = racePlayer.getPlayer();
+            if (player == null) continue;
 
-        return Bukkit.getScheduler().runTaskTimer(Main.getInstance(), () -> {
-            for (RacePlayer racePlayer : players) {
-                Player player = racePlayer.getPlayer();
-                if (player == null) continue;
+            TextColor color = NamedTextColor.GREEN;
+            if (currentCountdown.get() == 1) color = NamedTextColor.RED;
+            else if (currentCountdown.get() == 2) color = NamedTextColor.GOLD;
+            else if (currentCountdown.get() == 3) color = NamedTextColor.YELLOW;
 
-                TextColor color = NamedTextColor.GREEN;
-                if (currentCountdown.get() == 1) color = NamedTextColor.RED;
-                else if (currentCountdown.get() == 2) color = NamedTextColor.GOLD;
-                else if (currentCountdown.get() == 3) color = NamedTextColor.YELLOW;
-
-                //Teleport to start
-                if (currentCountdown.get() == 10) {
-                    player.performCommand("restart");
-                }
-
-                if (currentCountdown.get() <= 10) {
-                    //Invisible last 10 seconds
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 100, 0, true, false, false));
-
-                    Times times = Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
-                    player.showTitle(Title.title(Component.empty(), Component.text(currentCountdown.toString(), color, TextDecoration.BOLD), times));
-                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 1);
-                } else {
-                    Times times = Times.times(Duration.ofMillis(0), Duration.ofMillis(1500), Duration.ofMillis(0));
-                    player.showTitle(Title.title(Component.text("Race starting in", NamedTextColor.YELLOW), Component.text(TimeConverter.convertSecondsToTimeString(currentCountdown.get()), color, TextDecoration.BOLD), times));
-                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.1f, 1f);
-                }
+            //Teleport to start
+            if (currentCountdown.get() == 10) {
+                player.performCommand("restart");
             }
-            currentCountdown.getAndDecrement();
-        }, 0, 20);
+
+            if (currentCountdown.get() <= 10) {
+                //Invisible last 10 seconds
+                player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 100, 0, true, false, false));
+
+                Times times = Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
+                player.showTitle(Title.title(Component.empty(), Component.text(currentCountdown.toString(), color, TextDecoration.BOLD), times));
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 1);
+            } else {
+                Times times = Times.times(Duration.ofMillis(0), Duration.ofMillis(1500), Duration.ofMillis(0));
+                player.showTitle(Title.title(Component.text("Race starting in", NamedTextColor.YELLOW), Component.text(TimeConverter.convertSecondsToTimeString(currentCountdown.get()), color, TextDecoration.BOLD), times));
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.1f, 1f);
+            }
+        }
+        currentCountdown.getAndDecrement();
     }
 
-    private BukkitTask getStopTask() {
-        return Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
-            countDownTask.cancel();
+    private void start() {
+        countDownTask.cancel();
+        isStarting = false;
 
-            for (RacePlayer racePlayer : getOnlinePlayers()) {
-                Player player = racePlayer.getPlayer();
-                player.addScoreboardTag("inRace");
-                executeStartFunction(player);
-
-                isStarting = false;
-                hasStarted = true;
+        if (players.size() < 2) {
+            sendMessage(Main.PREFIX.append(Component.text("Not enough players to start!")));
+            if (isEvent) {
+                RaceManager.disbandRace(this); //Disband if event
             }
-            onCountdownFinish();
+            return;
+        }
 
-            sendMessage(Main.PREFIX.append(Component.text("Race has started")));
-        }, 20L * countDown);
+        hasStarted = true;
+        onRaceStart();
+
+        for (RacePlayer racePlayer : getOnlinePlayers()) {
+            Player player = racePlayer.getPlayer();
+            player.addScoreboardTag("inRace");
+            executeStartFunction(player);
+
+            // Show "GO" title
+            Times times = Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
+            player.showTitle(Title.title(Component.text(""), Component.text("GO", NamedTextColor.WHITE, TextDecoration.BOLD), times));
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 2);
+        }
+
+        //Start playing task
+        playingTask = Bukkit.getScheduler().runTaskTimer(Main.getInstance(), this::tick, 0, 1);
+        sendMessage(Main.PREFIX.append(Component.text("Race has started")));
     }
 
     /**
@@ -177,10 +181,6 @@ public abstract class Race {
         //stop race if everyone has finished
         if (players.stream().allMatch(RacePlayer::isFinished)) {
             stop();
-
-            // Disband race if event, otherwise it will stay there and invite joining players
-            if (isEvent) disband();
-            else sendMessage(Main.PREFIX.append(Component.text("Race has ended")));
         }
 
         for (RacePlayer racePlayer : players) {
@@ -261,13 +261,16 @@ public abstract class Race {
             Player player = racePlayer.getPlayer();
             if (player != null) player.removeScoreboardTag("inRace");
         }
-
         onRaceStop();
 
         cancelTasks();
         isStarting = false;
         hasStarted = false;
         updateRequirements();
+
+        // Disband race if event, otherwise it will stay there and invite joining players
+        if (isEvent) RaceManager.disbandRace(this);
+        else sendMessage(Main.PREFIX.append(Component.text("Race has ended")));
     }
 
     public void setCountDown(int value) {
@@ -306,15 +309,8 @@ public abstract class Race {
         return getRacePlayer(uuid) != null;
     }
 
-    public void leavePlayer(Player player) {
-        removePlayer(player.getUniqueId());
-
-        String text = isEvent ? "You have left the race" : "You have left " + name + "'s race";
-        player.sendMessage(Main.PREFIX.append(Component.text(text)));
-    }
-
     public void kickPlayer(UUID uuid) {
-        removePlayer(uuid);
+        removePlayerSilent(uuid);
 
         OfflinePlayer kickedPlayer = Bukkit.getOfflinePlayer(uuid);
         if (kickedPlayer.getPlayer() != null) {
@@ -322,7 +318,14 @@ public abstract class Race {
         }
     }
 
-    private void removePlayer(UUID uuid) {
+    public void removePlayer(Player player) {
+        removePlayerSilent(player.getUniqueId());
+
+        String text = isEvent ? "You have left the race" : "You have left " + name + "'s race";
+        player.sendMessage(Main.PREFIX.append(Component.text(text)));
+    }
+
+    public void removePlayerSilent(UUID uuid) {
         RacePlayer racePlayer = getRacePlayer(uuid);
         onPlayerLeave(racePlayer);
         players.remove(racePlayer);
@@ -580,15 +583,7 @@ public abstract class Race {
         }
     }
 
-    public void onCountdownFinish() {
-        players.stream().map(RacePlayer::getPlayer).filter(Objects::nonNull).forEach(player -> {
-
-            // Show "GO" title
-            Times times = Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
-            player.showTitle(Title.title(Component.text(""), Component.text("GO", NamedTextColor.WHITE, TextDecoration.BOLD), times));
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1, 2);
-        });
-    }
+    public abstract void onRaceStart();
 
     protected abstract void onRaceStop();
 
