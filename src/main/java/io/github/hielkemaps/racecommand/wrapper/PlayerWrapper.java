@@ -21,8 +21,6 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
 import java.time.Duration;
 import java.util.*;
@@ -138,18 +136,6 @@ public class PlayerWrapper {
         CommandAPI.updateRequirements(player);
     }
 
-    public Team getTeam() {
-        Player p = Bukkit.getPlayer(uuid);
-        if (p == null) return null;
-
-        Scoreboard scoreboard = Bukkit.getServer().getScoreboardManager().getMainScoreboard();
-
-        for (Team team : scoreboard.getTeams()) {
-            if (team.hasEntry(p.getName())) return team;
-        }
-        return null;
-    }
-
     public void disableDisguise() {
         if (isOnline() && isDisguised) {
             DisguiseAPI.getDisguise(getPlayer()).stopDisguise();
@@ -175,7 +161,10 @@ public class PlayerWrapper {
     public boolean isInInfectedRace() {
         if (!isInRace()) return false;
 
-        Race race = RaceManager.getRace(getPlayer().getName());
+        Player p = getPlayer();
+        if (p == null) return false;
+
+        Race race = RaceManager.getRace(p.getName());
         return (race instanceof InfectedRace);
     }
 

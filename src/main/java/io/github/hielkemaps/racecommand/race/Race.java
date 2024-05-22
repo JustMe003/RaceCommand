@@ -11,6 +11,7 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.Title.Times;
 import org.bukkit.Bukkit;
@@ -159,7 +160,7 @@ public abstract class Race {
         for (RacePlayer racePlayer : getOnlinePlayers()) {
             Player player = racePlayer.getPlayer();
             player.addScoreboardTag("inRace");
-            executeStartFunction(player);
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "execute as " + player.getName() + " at @s run function time:start");
 
             // Show "GO" title
             Times times = Times.times(Duration.ofMillis(100), Duration.ofMillis(900), Duration.ofMillis(100));
@@ -198,8 +199,7 @@ public abstract class Race {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 50, 0, true, false, false));
             }
 
-            Team team = PlayerManager.getPlayer(racePlayer.getUniqueId()).getTeam();
-            if (team.getName().equals("finished")) {
+            if(player.getScoreboardTags().contains("finished")){
                 setIsFinished(racePlayer);
             }
         }
@@ -462,6 +462,14 @@ public abstract class Race {
             sendMessage(player.getResult());
         }
         sendMessage(Component.text("                                     ", NamedTextColor.GOLD, TextDecoration.STRIKETHROUGH));
+
+
+        Bukkit.getLogger().info("---------------- Race Results ----------------");
+        for (RacePlayer player : players) {
+            final String plain = PlainTextComponentSerializer.plainText().serialize(player.getResult());
+            Bukkit.getLogger().info(plain);
+        }
+        Bukkit.getLogger().info("----------------------------------------------");
     }
 
     /**
@@ -544,12 +552,6 @@ public abstract class Race {
         if (tickObj != null) {
             Score score = tickObj.getScore(player.getName());
             score.setScore(ticksToSet);
-        }
-    }
-
-    public void executeStartFunction(Player player) {
-        if (Main.startFunction != null && !Main.startFunction.equals("")) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "execute as " + player.getName() + " at @s run function " + Main.startFunction);
         }
     }
 

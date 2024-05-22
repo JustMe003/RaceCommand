@@ -522,7 +522,8 @@ public class Commands {
 
                             //+2 ticks
                             Bukkit.getScheduler().scheduleSyncDelayedTask(Main.getInstance(), () -> {
-                                newRace.executeStartFunction(player); //run start function 2 ticks later so restart was successful
+
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "execute as " + player.getName() + " at @s run function time:start");
                                 player.addScoreboardTag("inRace");
 
                                 //+2 ticks
