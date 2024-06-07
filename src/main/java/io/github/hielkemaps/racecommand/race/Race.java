@@ -161,19 +161,23 @@ public abstract class Race {
         for (RacePlayer racePlayer : players) {
             actualPrizePool += racePlayer.getTotalWager();
         }
+
+        // When setting the prizes of the race, add the prizes to the already existing prizes
+        // In case the race is an event and has already loaded some prizes
+        // Rather than overriding the event prizes, we should add the prize pool to the existing prizes
         if (actualPrizePool > 0) {
             if (players.size() == 2) {
                 // 1st: 100%
-                setPrizes(actualPrizePool, 0, 0, 0);
+                setPrizes(getFirstPrize() + actualPrizePool, getSecondPrize(), getThirdPrize(), getFourthPlusPrize());
             } else if (players.size() == 3) {
                 // 1st: 70%, 2nd: 30%
                 int firstPrize = (int) Math.round(actualPrizePool * 0.7);
-                setPrizes(firstPrize, actualPrizePool - firstPrize, 0, 0);
+                setPrizes(getFirstPrize() + firstPrize, getSecondPrize() + actualPrizePool - firstPrize, getThirdPrize(), getFourthPlusPrize());
             } else {
                 // 1st: 60%, 2nd: 25%, 3rd: 15%
                 int firstPrize = (int) Math.round(actualPrizePool * 0.6);
                 int secondPrize = (int) Math.round(actualPrizePool * 0.25);
-                setPrizes(firstPrize, secondPrize, actualPrizePool - firstPrize - secondPrize, 0);
+                setPrizes(getFirstPrize() + firstPrize, getSecondPrize() + secondPrize, getThirdPrize() + actualPrizePool - firstPrize - secondPrize, getFourthPlusPrize());
             }
         }
 
@@ -626,10 +630,10 @@ public abstract class Race {
         sendMessage(finishMsg);
 
         if (isEvent || totalPrizePool > 0) {
-            if (place == 1 && prizes[0] > 0) player.givePoints(prizes[0]);
-            if (place == 2 && prizes[1] > 0) player.givePoints(prizes[1]);
-            if (place == 3 && prizes[2] > 0) player.givePoints(prizes[2]);
-            if (place >= 4 && prizes[3] > 0) player.givePoints(prizes[3]);
+            if (place == 1 && prizes[0] > 0) player.givePoints(getFirstPrize());
+            if (place == 2 && prizes[1] > 0) player.givePoints(getSecondPrize());
+            if (place == 3 && prizes[2] > 0) player.givePoints(getThirdPrize());
+            if (place >= 4 && prizes[3] > 0) player.givePoints(getFourthPlusPrize());
         }
     }
 
@@ -670,5 +674,21 @@ public abstract class Race {
         prizes[1] = second;
         prizes[2] = third;
         prizes[3] = fourth;
+    }
+
+    public int getFirstPrize() {
+        return prizes[0];
+    }
+
+    public int getSecondPrize() {
+        return prizes[1];
+    }
+
+    public int getThirdPrize() {
+        return prizes[2];
+    }
+
+    public int getFourthPlusPrize() {
+        return prizes[3];
     }
 }
