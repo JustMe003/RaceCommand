@@ -29,6 +29,8 @@ public class RacePlayer implements Comparable<RacePlayer> {
     private boolean finished = false;
     private int place = Integer.MAX_VALUE;
     private int time;
+    private int wager;
+    private int additionalWager;
 
     public RacePlayer(Race race, UUID uuid) {
         this.race = race;
@@ -56,6 +58,41 @@ public class RacePlayer implements Comparable<RacePlayer> {
 
     public int getTime() {
         return time;
+    }
+
+    public int getWager() {
+        return wager;
+    }
+
+    public int getAdditionalWager() {
+        return additionalWager;
+    }
+
+    public int getTotalWager() {
+        return wager + additionalWager;
+    }
+
+    public boolean setNewWager(int wager) {
+        if (wager < race.getMinimumWager()) {
+            return false;
+        }
+        int diff = wager - this.wager;
+        race.increasePrizePool(diff);
+        this.wager = wager;
+        return true;
+    }
+
+    public boolean increaseAdditionalWager(int inc) {
+        if (additionalWager + inc < 0) {
+            return false;
+        }
+        race.increasePrizePool(inc);
+        additionalWager += inc;
+        return true;
+    }
+
+    public boolean hasWager() {
+        return wager + additionalWager > 0;
     }
 
     @Override
@@ -153,13 +190,48 @@ public class RacePlayer implements Comparable<RacePlayer> {
         return PlayerManager.getPlayer(uuid);
     }
 
-    public void givePoints(int points) {
+    public void refundAllWagers() {
+        if (wager + additionalWager > 0) {
+            givePointsSilently(wager + additionalWager);
+            race.increasePrizePool(-(wager + additionalWager)); // remove from prizepool
+
+            Component message = Main.PREFIX
+                    .append(Component.text("You got refunded ", NamedTextColor.GRAY))
+                    .append(Component.text(wager + additionalWager, NamedTextColor.YELLOW))
+                    .append(Component.text(" Parcoins", NamedTextColor.GRAY));
+
+            getPlayer().sendMessage(message);
+            wager = 0;
+            additionalWager = 0;
+        }
+    }
+
+    public void givePointsSilently(int points) {
         PlayerPoints.getInstance().getAPI().give(uuid, points);
+    }
+
+    public void takePointsSilently(int points) {
+        PlayerPoints.getInstance().getAPI().take(this.uuid, points);
+    }
+
+    public void givePoints(int points) {
+        givePointsSilently(points);
 
         Component message = Main.PREFIX
                 .append(Component.text("You won ", NamedTextColor.GRAY))
                 .append(Component.text(points, TextColor.color(255, 255, 254), TextDecoration.BOLD)) //Rainbow-colored
                 .append(Component.text(" Parcoins!", NamedTextColor.GRAY));
+
+        getPlayer().sendMessage(message);
+    }
+
+    public void takePoints(int points) {
+        takePointsSilently(points);
+
+        Component message = Main.PREFIX
+                .append(Component.text("You payed ", NamedTextColor.GRAY))
+                .append(Component.text(points, NamedTextColor.YELLOW))
+                .append(Component.text(" Parcoins", NamedTextColor.GRAY));
 
         getPlayer().sendMessage(message);
     }

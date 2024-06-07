@@ -47,12 +47,14 @@ public abstract class Race {
     protected String type;
     protected String formattedType;
     private int place = 1;
+    private int totalPrizePool = 0;
 
     //options
     private boolean isPublic = false;
     private int countDown = 5;
     private boolean broadcast = false;
     private boolean ghostPlayers = false;
+    private int minimumWager = 0;
 
     private boolean isEvent = false;
 
@@ -152,6 +154,27 @@ public abstract class Race {
                 RaceManager.disbandRace(this); //Disband if event
             }
             return;
+        }
+
+        // Recalculate prize pool, just in case something went wrong in adding / removing parcoins
+        int actualPrizePool = 0;
+        for (RacePlayer racePlayer : players) {
+            actualPrizePool += racePlayer.getTotalWager();
+        }
+        if (actualPrizePool > 0) {
+            if (players.size() == 2) {
+                // 1st: 100%
+                setPrizes(actualPrizePool, 0, 0, 0);
+            } else if (players.size() == 3) {
+                // 1st: 70%, 2nd: 30%
+                int firstPrize = (int) Math.round(actualPrizePool * 0.7);
+                setPrizes(firstPrize, actualPrizePool - firstPrize, 0, 0);
+            } else {
+                // 1st: 60%, 2nd: 25%, 3rd: 15%
+                int firstPrize = (int) Math.round(actualPrizePool * 0.6);
+                int secondPrize = (int) Math.round(actualPrizePool * 0.25);
+                setPrizes(firstPrize, secondPrize, actualPrizePool - firstPrize - secondPrize, 0);
+            }
         }
 
         hasStarted = true;
@@ -287,6 +310,9 @@ public abstract class Race {
         sendMessageToRaceMembers(joinMsg);
         RacePlayer newPlayer = new RacePlayer(this, uuid);
         players.add(newPlayer);
+        if (minimumWager > 0) {
+            newPlayer.setNewWager(minimumWager);
+        }
 
         PlayerWrapper pw = PlayerManager.getPlayer(uuid);
         pw.setInRace(true);
@@ -328,6 +354,7 @@ public abstract class Race {
     public void removePlayerSilent(UUID uuid) {
         RacePlayer racePlayer = getRacePlayer(uuid);
         onPlayerLeave(racePlayer);
+        racePlayer.refundAllWagers();
         players.remove(racePlayer);
 
         Component leaveMessage = Main.PREFIX
@@ -366,6 +393,7 @@ public abstract class Race {
             } else {
                 player.sendMessage(Main.PREFIX.append(Component.text("The race has been disbanded")));
             }
+            racePlayer.refundAllWagers();
         }
     }
 
@@ -397,6 +425,17 @@ public abstract class Race {
 
         broadcast = value;
         return true;
+    }
+
+    public boolean setMinimumWager(int wage) {
+        if (wage == minimumWager) return false;
+
+        minimumWager = wage;
+        return true;
+    }
+
+    public int getMinimumWager() {
+        return minimumWager;
     }
 
     public boolean isStarting() {
@@ -566,6 +605,15 @@ public abstract class Race {
         return players;
     }
 
+    public int getTotalPrizePool() {
+        return totalPrizePool;
+    }
+
+    public int increasePrizePool(int addedPrizes) {
+        totalPrizePool += addedPrizes;
+        return totalPrizePool;
+    }
+
     public boolean isOwner(UUID uniqueId) {
         return uniqueId.equals(owner);
     }
@@ -577,11 +625,11 @@ public abstract class Race {
                 .append(Component.text(" (" + Util.getTimeString(time) + ")", NamedTextColor.WHITE));
         sendMessage(finishMsg);
 
-        if (isEvent) {
-            if (place == 1) player.givePoints(prizes[0]);
-            if (place == 2) player.givePoints(prizes[1]);
-            if (place == 3) player.givePoints(prizes[2]);
-            if (place >= 4) player.givePoints(prizes[3]);
+        if (isEvent || totalPrizePool > 0) {
+            if (place == 1 && prizes[0] > 0) player.givePoints(prizes[0]);
+            if (place == 2 && prizes[1] > 0) player.givePoints(prizes[1]);
+            if (place == 3 && prizes[2] > 0) player.givePoints(prizes[2]);
+            if (place >= 4 && prizes[3] > 0) player.givePoints(prizes[3]);
         }
     }
 

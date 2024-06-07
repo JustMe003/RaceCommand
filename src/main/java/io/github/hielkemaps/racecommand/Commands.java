@@ -14,6 +14,7 @@ import io.github.hielkemaps.racecommand.race.types.PvpRace;
 import io.github.hielkemaps.racecommand.wrapper.PlayerManager;
 import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -196,7 +197,9 @@ public class Commands {
         arguments = new ArrayList<>();
         arguments.add(new LiteralArgument("join").withRequirement(playerHasJoinableRaces));
         arguments.add(new StringArgument("player").replaceSuggestions(ArgumentSuggestions.strings((info) -> PlayerManager.getPlayer(((Player) info.sender()).getUniqueId()).getJoinableRaces())));
-        new CommandAPICommand("race").withArguments(arguments).executesPlayer((p, args) -> {
+        new CommandAPICommand("race").withArguments(arguments)
+                .withOptionalArguments(new BooleanArgument("pay_wager")).withUsage("/race join [player]")
+                .executesPlayer((p, args) -> {
             String raceName = (String) args.get(0);
             Race race = RaceManager.getRace(raceName);
             if (race == null) {
@@ -218,6 +221,52 @@ public class Commands {
                     return;
                 }
 
+                int minWager = race.getMinimumWager();
+                Boolean payWager = (Boolean) args.get("pay_wager");
+                if (minWager > 0) {
+                    // Has minimum wager
+
+                    if (minWager > wPlayer.getPlayerPoints() && !wPlayer.isInRace()) {
+                        // Player does not have enough points
+                        p.sendMessage(Component.text("This race requires you to pay a minimum wager of " + minWager + " parcoins, but you don't have enough parcoins. Please ask the race creator to lower the entry cost or get more parcoins yourself", NamedTextColor.YELLOW));
+                        return;
+                    } else if (wPlayer.isInRace()) {
+                        // Maybe player has wager in current race, that could be enough to pay the minimum wager for this race
+                        Race raceWithPlayer = RaceManager.getRace(p.getUniqueId());
+
+                        if (raceWithPlayer == null || raceWithPlayer.hasStarted()) {
+                            // no race or race has started means not enough parcoins to join
+                            p.sendMessage(Component.text("This race requires you to pay a minimum wager of " + minWager + " parcoins, but you don't have enough parcoins. Please ask the race creator to lower the entry cost or get more parcoins yourself", NamedTextColor.YELLOW));
+                            return;
+                        }
+
+                        RacePlayer racePlayer = raceWithPlayer.getRacePlayer(p.getUniqueId());
+
+                        if (racePlayer == null) {
+                            // Invalid state, but still has not enough parcoins to join
+                            p.sendMessage(Component.text("This race requires you to pay a minimum wager of " + minWager + " parcoins, but you don't have enough parcoins. Please ask the race creator to lower the entry cost or get more parcoins yourself", NamedTextColor.YELLOW));
+                            return;
+                        }
+
+                        if (!racePlayer.hasWager() || racePlayer.getTotalWager() < minWager) {
+                            // Either has no wager in current race, so not enough parcoins
+                            // Or the total wager in current race is not enough to pay the minimum wager for this race
+                            p.sendMessage(Component.text("This race requires you to pay a minimum wager of " + minWager + " parcoins, but you don't have enough parcoins. Please ask the race creator to lower the entry cost or get more parcoins yourself", NamedTextColor.YELLOW));
+                            return;
+                        }
+                    }
+
+                    if (payWager == null || !payWager) {
+                        // pay_wager was not set or was false
+                        // Player can pay minimum wager
+                        Component msg = Main.PREFIX
+                                .append(Component.text("This race requires you to pay a minimum wager of " + race.getMinimumWager() + " parcoins to join. Are you sure you want to join? "))
+                                .append(Component.text("[Yes]", NamedTextColor.GREEN).clickEvent(ClickEvent.runCommand("/race join " + raceName + " " + true)));
+                        p.sendMessage(msg);
+                        return;
+                    }
+                }
+
                 //If player in existing race, leave
                 if (wPlayer.isInRace()) {
                     Race raceToLeave = RaceManager.getRace(p);
@@ -236,6 +285,18 @@ public class Commands {
                 //Join race
                 if (!wPlayer.acceptInvite(raceName)) {
                     throw CommandAPI.failWithString("Could not join race");
+                } else {
+                    if (payWager != null && payWager) {
+                        // pay_wager was true
+                        wPlayer.takePlayerPoints(minWager);
+
+                        Component message = Main.PREFIX
+                                .append(Component.text("You payed ", NamedTextColor.GRAY))
+                                .append(Component.text(minWager, NamedTextColor.YELLOW))
+                                .append(Component.text(" Parcoins", NamedTextColor.GRAY));
+
+                        p.sendMessage(message);
+                    }
                 }
             }
         }).register();
@@ -280,6 +341,12 @@ public class Commands {
                     }
                     p.sendMessage("Visibility: " + (race.isPublic() ? ChatColor.GREEN + "Public" : ChatColor.RED + "Private"));
                     p.sendMessage("Type: " + race.getTypeString());
+                    if (race.getMinimumWager() > 0) {
+                        p.sendMessage("Minimum wager: " + ChatColor.GRAY + race.getMinimumWager());
+                    }
+                    if (race.getTotalPrizePool() > 0) {
+                        p.sendMessage("Prize pool: " + ChatColor.GOLD + race.getTotalPrizePool());
+                    }
                     p.sendMessage("Players:");
 
                     for (RacePlayer racePlayer : race.getPlayers()) {
@@ -464,6 +531,117 @@ public class Commands {
 
                     } else {
                         p.sendMessage(Main.PREFIX.append(Component.text("Nothing changed. Broadcast was already set to " + value, NamedTextColor.RED)));
+                    }
+                }).register();
+
+        //Option set minimum wager
+        arguments = new ArrayList<>();
+        arguments.add(new LiteralArgument("option").withRequirement(playerInRace.and(playerIsRaceOwner)));
+        arguments.add(new LiteralArgument("wager").withRequirement(playerInRace.and(Predicate.not(playerInInfectedRace)))); // Don't allow wagers in infected races (Idk how I would hand out the parcoins xD)
+        arguments.add(new IntegerArgument("minimum", 10));
+        new CommandAPICommand("race")
+                .withArguments((arguments))
+                .executesPlayer((p, args) -> {
+                    try {
+                        int wager = (int) args.get(0);
+
+                        Race race = RaceManager.getRace(p);
+                        if (race == null) return;
+
+                        // Only allow wager to be set when no other player are in the race
+                        if (race.getPlayers().size() != 1) {
+                            p.sendMessage(Main.PREFIX.append(Component.text("You can only set the minimum wage if no other players have joined the race", NamedTextColor.RED)));
+                            return;
+                        }
+
+                        int oldWager = race.getMinimumWager();
+
+                        PlayerWrapper wPlayer = PlayerManager.getPlayer(p.getUniqueId());
+
+                        if (wager > wPlayer.getPlayerPoints() + oldWager) {
+                            p.sendMessage(Main.PREFIX.append(Component.text("You must be able to pay the minimum wager yourself!", NamedTextColor.RED)));
+                            return;
+                        }
+
+                        if (race.setMinimumWager(wager)) {
+                            if (oldWager > wager) {
+                                // Don't want the rainbow text flashing on the screen, just for giving some of the parcoins back :)
+                                race.getPlayers().get(0).givePointsSilently(oldWager - wager);
+                                p.sendMessage(Main.PREFIX.append(Component.text("Added ", NamedTextColor.GRAY))
+                                        .append(Component.text(oldWager - wager, NamedTextColor.YELLOW))
+                                        .append(Component.text(" parcoins", NamedTextColor.GRAY)));
+                            } else {
+                                race.getPlayers().get(0).takePoints(wager - oldWager);
+                            }
+                            p.sendMessage(Main.PREFIX.append(Component.text("Minimum wager set to " + wager)));
+                        } else {
+                            // no change, no need to remove / add points
+                            p.sendMessage(Main.PREFIX.append(Component.text("Minimum wager was already set to " + wager, NamedTextColor.RED)));
+                        }
+
+                        race.getPlayers().get(0).setNewWager(wager);
+                    } catch(NullPointerException e) {
+                        p.sendMessage(Main.PREFIX.append(Component.text("You must enter a number higher than 10 as the minimum wager", NamedTextColor.RED)));
+                    }
+                }).register();
+
+        //wager increase
+        arguments = new ArrayList<>();
+        arguments.add(new LiteralArgument("wager").withRequirement(playerInRace));
+        arguments.add(new LiteralArgument("increase"));
+        arguments.add(new IntegerArgument("amount", 1));
+        new CommandAPICommand("race")
+                .withArguments(arguments)
+                .executesPlayer((p, args) -> {
+                   Integer wager = (Integer) args.get(0);
+
+                   if (wager == null) return;
+
+                   Race race = RaceManager.getRace(p);
+
+                   if (race == null) return;
+
+                   RacePlayer player = race.getRacePlayer(p.getUniqueId());
+                   if (player.getWrapper().getPlayerPoints() < wager) {
+                       p.sendMessage(Component.text("You don't have enough parcoins!", NamedTextColor.RED));
+                   } else {
+                       player.increaseAdditionalWager(wager);
+                       player.takePointsSilently(wager);
+                       Component msg = Component.text("Increased wager with ", NamedTextColor.GRAY)
+                                            .append(Component.text(wager, NamedTextColor.GOLD))
+                                            .append(Component.text("!", NamedTextColor.GRAY));
+
+                       p.sendMessage(msg);
+                   }
+                }).register();
+
+        //wager decrease
+        arguments = new ArrayList<>();
+        arguments.add(new LiteralArgument("wager").withRequirement(playerInRace));
+        arguments.add(new LiteralArgument("decrease"));
+        arguments.add(new IntegerArgument("amount", 1));
+        new CommandAPICommand("race")
+                .withArguments(arguments)
+                .executesPlayer((p, args) -> {
+                    Integer wager = (Integer) args.get(0);
+
+                    if (wager == null) return;
+
+                    Race race = RaceManager.getRace(p);
+
+                    if (race == null) return;
+
+                    RacePlayer player = race.getRacePlayer(p.getUniqueId());
+                    if (player.getAdditionalWager() < wager) {
+                        p.sendMessage(Component.text("You can at most remove " + player.getAdditionalWager() + " from your wagers!", NamedTextColor.RED));
+                    } else {
+                        player.increaseAdditionalWager(-wager);
+                        player.givePointsSilently(wager);
+                        Component msg = Component.text("Decreased wager with ", NamedTextColor.GRAY)
+                                .append(Component.text(wager, NamedTextColor.GOLD))
+                                .append(Component.text("!", NamedTextColor.GRAY));
+
+                        p.sendMessage(msg);
                     }
                 }).register();
 

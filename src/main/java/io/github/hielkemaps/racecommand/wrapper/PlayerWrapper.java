@@ -15,6 +15,7 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
+import org.black_ixx.playerpoints.PlayerPoints;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
@@ -284,5 +285,13 @@ public class PlayerWrapper {
 
     public void showAbilities() {
         abilities.forEach(Ability::show);
+    }
+
+    public int getPlayerPoints() {
+        return PlayerPoints.getInstance().getAPI().look(this.uuid);
+    }
+
+    public void takePlayerPoints(int amount) {
+        PlayerPoints.getInstance().getAPI().take(this.uuid, amount);
     }
 }
