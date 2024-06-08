@@ -16,6 +16,8 @@ import io.github.hielkemaps.racecommand.wrapper.PlayerWrapper;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -344,8 +346,20 @@ public class Commands {
                     if (race.getMinimumWager() > 0) {
                         p.sendMessage("Minimum wager: " + ChatColor.GRAY + race.getMinimumWager());
                     }
+                    if (race.isEvent()) {
+                        Component msg = Component.text("Guaranteed prizes: \n  1st: ")
+                                .append(Component.text(race.getFirstPrize(), NamedTextColor.GOLD, TextDecoration.BOLD))
+                                .append(Component.text("\n  2nd: "))
+                                .append(Component.text(race.getSecondPrize(), NamedTextColor.GRAY, TextDecoration.BOLD))
+                                .append(Component.text("\n  3rd: "))
+                                .append(Component.text(race.getThirdPrize(), TextColor.color(164, 102, 40), TextDecoration.BOLD))
+                                .append(Component.text("\n  4th+: "))
+                                .append(Component.text(race.getFourthPlusPrize(), NamedTextColor.WHITE, TextDecoration.BOLD));
+
+                        p.sendMessage(msg);
+                    }
                     if (race.getTotalPrizePool() > 0) {
-                        p.sendMessage("Prize pool: " + ChatColor.GOLD + race.getTotalPrizePool());
+                        p.sendMessage((race.isEvent() ? "Extra prize pool: " : "Prize pool: ") + ChatColor.GOLD + ChatColor.BOLD + race.getTotalPrizePool());
                     }
                     p.sendMessage("Players:");
 
